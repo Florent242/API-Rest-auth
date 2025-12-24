@@ -35,5 +35,14 @@ describe('Auth Middleware', ()=>{
 
     test('should reject malformed authorization header', async ()=>{
         const res = await request(app).get('/protected').set('Authorization', 'InvalidFormat');
+        assert.strictEqual(res.status, 401);
     });
+
+    test('should acccept request with valide token', async ()=>{
+        const token = jwt.sign({
+            userId: 1, email: 'florent@test.co'
+        }, process.env.JWT_SECRET, {expiresIn: '1h'})
+        const res = await  request(app).get('/protected').set('Authorization', `Bearer ${token}`)
+        assert.strictEqual(res.status, 200);
+    })
 });
