@@ -7,6 +7,7 @@ import { setupDatabase } from './setup.js';
 import jwt from 'jsonwebtoken';
 import express from "express";
 import request from 'supertest'
+import {authMiddleware} from "#middlewares/auth.middleware";
 const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
@@ -16,7 +17,7 @@ describe('Auth Middleware', ()=>{
     let app;
     before(()=>{
         app = express ();
-        app.get('/protected', (req, res, next)=>{
+        app.get('/protected', authMiddleware, (req, res, next)=>{
 
             if (!req.headers.authorization)return res.status(401).send('No Token');
         });
