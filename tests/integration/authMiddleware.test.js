@@ -26,4 +26,10 @@ describe('Auth Middleware', ()=>{
         const res = await request(app).get('/protected');
         assert.strictEqual(res.status, 401);
     })
+
+    test('should reject request with invalid token', async ()=>{
+        const res = await request(app).get('/protected').set('Authorization', 'Bear invalid token')
+
+        assert.strictEqual(res.status, 401);
+    })
 });
