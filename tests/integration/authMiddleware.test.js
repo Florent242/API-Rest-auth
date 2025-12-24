@@ -46,4 +46,18 @@ describe('Auth Middleware', ()=>{
         const res = await  request(app).get('/protected').set('Authorization', `Bearer ${token}`)
         assert.strictEqual(res.status, 200);
     })
+
+    test('should attach decoded user to req.user', async ()=>{
+        let receiveUser;
+        app.get('/me', authMiddleware, (req, res)=>{
+            receiveUser = req.user;
+            res.sendStatus(200);
+        });
+
+        const token = jwt.sign({
+            userId: 1, email: 'florent@test.co'
+        }, process.env.JWT_SECRET, {expiresIn: '1h'})
+        const res = await request(app).get('/me').set('Authorization', `Bearer ${token}`)
+        assert.strictEqual(receiveUser.userId, 1);
+    })
 });
