@@ -34,4 +34,13 @@ describe('Register DTO validation', ()=>{
         });
         assert.strictEqual(res.status, 422);
     })
+    test('should accept valid payload', async ()=>{
+        const res = await request(app).post('/register').send({
+            email: 'test@test.test',
+            password: 'motDePasse',
+            firstName: 'Florent',
+            lastName: 'BOUDZOUMOU'
+        });
+        assert.strictEqual(res.status, 200);
+    })
 })
