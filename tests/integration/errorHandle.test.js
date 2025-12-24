@@ -20,4 +20,12 @@ describe('Error handler', ()=>{
         assert.strictEqual(res.status, 500);
         assert.strictEqual(res.body.error, 'Test error')
     })
+
+    test('should have security headers from Helmet', async () => {
+        const res = await request(app).get('/');
+        
+        assert.ok(res.headers['x-content-type-options']);
+        assert.ok(res.headers['x-dns-prefetch-control']);
+        assert.ok(res.headers['x-frame-options']);
+      });
 })
