@@ -59,5 +59,6 @@ describe('Auth Middleware', ()=>{
         }, process.env.JWT_SECRET, {expiresIn: '1h'})
         const res = await request(app).get('/me').set('Authorization', `Bearer ${token}`)
         assert.strictEqual(receiveUser.userId, 1);
+        assert.strictEqual(receiveUser.password, undefined);
     })
 });
