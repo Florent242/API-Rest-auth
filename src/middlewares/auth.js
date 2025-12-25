@@ -29,7 +29,6 @@ const authMiddleware = async (req, res, next) => {
 
     // Vérifier le token JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     
     // Vérifier si l'utilisateur existe et n'est pas désactivé
     const user = await prisma.user.findUnique({
