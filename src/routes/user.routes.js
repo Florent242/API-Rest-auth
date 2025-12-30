@@ -1,19 +1,15 @@
-const express = require('express');
-const router = express.Router();
-const userController = require('../controllers/user.controller');
-const { validateUserUpdate } = require('../middleware/validation');
-export const authMiddleware = require('../middleware/auth');
+import express from "express";
+import * as userController from "../controllers/user.controller.js";
+import authMiddleware from "../middlewares/auth.js";
+import { validateUserUpdate } from "../middlewares/validation.js";
 
-// Toutes les routes nécessitent une authentification
+const router = express.Router();
+
+// Toutes les routes ici sont protégées par JWT
 router.use(authMiddleware);
 
-// GET /user/profile
-router.get('/profile', userController.getProfile);
+router.get("/profile", userController.getProfile);
+router.put("/profile", validateUserUpdate, userController.updateProfile);
+router.delete("/account", userController.deleteAccount);
 
-// PUT /user/profile
-router.put('/profile', validateUserUpdate, userController.updateProfile);
-
-// DELETE /user/account
-router.delete('/account', userController.deleteAccount);
-
-module.exports = router;
+export default router;

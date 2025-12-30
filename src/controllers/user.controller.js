@@ -1,4 +1,5 @@
 import userService from "#services/user.service";
+import { de } from "zod/locales";
 
 
   // GET /user/profile
@@ -77,9 +78,34 @@ import userService from "#services/user.service";
       });
     }
   }
+// Dans user.controller.js
+const githubCallback = async (req, res) => {
+  try {
+    const user = req.user; // Injecté par Passport après le succès de la stratégie
 
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Auth échouée" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Authentification GitHub réussie",
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName
+      },
+      // tokens: { accessToken, refreshToken }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// MODIFIEZ L'EXPORT À LA FIN :
 export default {
   getProfile,
   updateProfile,
   deleteAccount,
+  githubCallback, 
 };
