@@ -1,16 +1,17 @@
 export default {
-  testEnvironment: 'node',
+  testEnvironment: '<rootDir>/tests/jest-environment.cjs',
+  globalSetup: '<rootDir>/tests/globalSetup.js',
   transform: {},
-  moduleNameMapper: {
-    '^#lib/(.*)$': '<rootDir>/src/lib/$1',
-    '^#controllers/(.*)$': '<rootDir>/src/controllers/$1',
-    '^#services/(.*)$': '<rootDir>/src/services/$1',
-    '^#middlewares/(.*)$': '<rootDir>/src/middlewares/$1',
-    '^#routes/(.*)$': '<rootDir>/src/routes/$1',
-    '^#schemas/(.*)$': '<rootDir>/src/schemas/$1',
-    '^#dto/(.*)$': '<rootDir>/src/dto/$1',
-  },
   testMatch: ['**/tests/**/*.test.js'],
+  moduleNameMapper: {
+    '^#lib/(.*)$': '<rootDir>/src/lib/$1.js',
+    '^#controllers/(.*)$': '<rootDir>/src/controllers/$1.js',
+    '^#services/(.*)$': '<rootDir>/src/services/$1.js',
+    '^#middlewares/(.*)$': '<rootDir>/src/middlewares/$1.js',
+    '^#routes/(.*)$': '<rootDir>/src/routes/$1.js',
+    '^#schemas/(.*)$': '<rootDir>/src/schemas/$1.js',
+    '^#dto/(.*)$': '<rootDir>/src/dto/$1.js',
+  },
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'src/**/*.js',
@@ -18,4 +19,10 @@ export default {
   ],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testTimeout: 10000,
+  globals: {
+    'ts-jest': {
+      useESM: true,
+    },
+  },
+  injectGlobals: true,
 };

@@ -1,15 +1,14 @@
-import { describe, test, before, after } from 'node:test';
-import assert from 'node:assert';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import { setupDatabase } from './setup.js';
 import { prisma } from '#lib/prisma';
 import jwt from 'jsonwebtoken';
 
 describe('User model', () => {
-  before(async () => {
+  beforeAll(async () => {
     setupDatabase();
   });
 
-  after(async () => {
+  afterAll(async () => {
     await prisma.$disconnect();
   });
 
@@ -25,14 +24,14 @@ describe('User model', () => {
       },
     });
 
-    assert.ok(user.id);
+    expect(user.id).toBeDefined();
 
     const found = await prisma.user.findUnique({
       where: { email },
     });
 
-    assert.ok(found);
-    assert.strictEqual(found.firstName, 'Test');
+    expect(found).toBeDefined();
+    expect(found.firstName).toBe('Test');
   });
 
   test('should generate jwt', async () => {
@@ -51,10 +50,10 @@ describe('User model', () => {
       { expiresIn: '1h' }
     );
     
-    assert.ok(token);
+    expect(token).toBeDefined();
 
     // Verify if jwt correctly generated
     const decode = jwt.verify(token, 'Secret-cle-avec-plus-de-mot');
-    assert.strictEqual(decode.userId, user.id);
+    expect(decode.userId).toBe(user.id);
   });
 });

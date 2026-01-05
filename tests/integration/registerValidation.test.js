@@ -1,5 +1,4 @@
-import { describe, test, before } from 'node:test';
-import assert from 'node:assert';
+import { describe, test, expect, beforeAll } from '@jest/globals';
 import express from 'express';
 import request from 'supertest';
 import { registerValidation } from '#middlewares/registerValidation.middleware';
@@ -8,7 +7,7 @@ import { registerSchema } from '#dto/register.dto';
 describe('Register DTO validation', () => {
   let app;
   
-  before(() => {
+  beforeAll(() => {
     app = express();
     app.use(express.json());
     app.post('/register', registerValidation(registerSchema), (req, res) =>
@@ -23,7 +22,7 @@ describe('Register DTO validation', () => {
       firstName: 'Florent',
       lastName: 'BOUDZOUMOU'
     });
-    assert.strictEqual(res.status, 422);
+    expect(res.status).toBe(422);
   });
 
   test('should reject if password is short', async () => {
@@ -32,7 +31,7 @@ describe('Register DTO validation', () => {
       firstName: 'Florent',
       lastName: 'BOUDZOUMOU'
     });
-    assert.strictEqual(res.status, 422);
+    expect(res.status).toBe(422);
   });
   
   test('should accept valid payload', async () => {
@@ -42,6 +41,6 @@ describe('Register DTO validation', () => {
       firstName: 'Florent',
       lastName: 'BOUDZOUMOU'
     });
-    assert.strictEqual(res.status, 200);
+    expect(res.status).toBe(200);
   });
 });

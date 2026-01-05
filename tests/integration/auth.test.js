@@ -1,3 +1,4 @@
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import { setupDatabase } from './setup.js';
 import app from '../../src/app.js';
@@ -13,7 +14,7 @@ describe('Authentication Flow', () => {
     await prisma.$disconnect();
   });
 
-    test('should register a new user successfully', async () => {
+  test('should register a new user successfully', async () => {
         const res = await request(app)
             .post('/api/users/register')
             .send({
@@ -23,13 +24,13 @@ describe('Authentication Flow', () => {
                 lastName: 'Doe'
             });
 
-        assert.strictEqual(res.status, 201);
-        assert.strictEqual(res.body.success, true);
-        assert.ok(res.body.data.accessToken);
-        assert.ok(res.body.data.refreshToken);
-        assert.ok(res.body.data.user);
-        assert.strictEqual(res.body.data.user.firstName, 'John');
-        assert.strictEqual(res.body.data.user.password, undefined);
+        expect(res.status).toBe(201);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data.accessToken).toBeDefined();
+        expect(res.body.data.refreshToken).toBeDefined();
+        expect(res.body.data.user).toBeDefined();
+        expect(res.body.data.user.firstName).toBe('John');
+        expect(res.body.data.user.password).toBe(undefined);
     });
 
     test('should reject registration with duplicate email', async () => {
@@ -53,8 +54,8 @@ describe('Authentication Flow', () => {
                 lastName: 'Smith'
             });
 
-        assert.strictEqual(res.status, 409);
-        assert.strictEqual(res.body.success, false);
+        expect(res.status).toBe(409);
+        expect(res.body.success).toBe(false);
     });
 
     test('should reject registration with invalid email', async () => {
@@ -67,8 +68,8 @@ describe('Authentication Flow', () => {
                 lastName: 'Doe'
             });
 
-        assert.strictEqual(res.status, 400);
-        assert.strictEqual(res.body.success, false);
+        expect(res.status).toBe(400);
+        expect(res.body.success).toBe(false);
     });
 
     test('should reject registration with short password', async () => {
@@ -81,8 +82,8 @@ describe('Authentication Flow', () => {
                 lastName: 'Doe'
             });
 
-        assert.strictEqual(res.status, 400);
-        assert.strictEqual(res.body.success, false);
+        expect(res.status).toBe(400);
+        expect(res.body.success).toBe(false);
     });
 
     test('should login with valid credentials', async () => {
@@ -104,11 +105,11 @@ describe('Authentication Flow', () => {
             .post('/api/users/login')
             .send({ email, password });
 
-        assert.strictEqual(res.status, 200);
-        assert.strictEqual(res.body.success, true);
-        assert.ok(res.body.data.accessToken);
-        assert.ok(res.body.data.refreshToken);
-        assert.ok(res.body.data.user);
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data.accessToken).toBeDefined();
+        expect(res.body.data.refreshToken).toBeDefined();
+        expect(res.body.data.user).toBeDefined();
     });
 
     test('should reject login with invalid credentials', async () => {
@@ -119,8 +120,8 @@ describe('Authentication Flow', () => {
                 password: 'wrongpassword'
             });
 
-        assert.strictEqual(res.status, 401);
-        assert.strictEqual(res.body.success, false);
+        expect(res.status).toBe(401);
+        expect(res.body.success).toBe(false);
     });
 
     test('should access protected route with valid token', async () => {
@@ -143,15 +144,15 @@ describe('Authentication Flow', () => {
             .get('/api/users/me')
             .set('Authorization', `Bearer ${token}`);
 
-        assert.strictEqual(res.status, 200);
-        assert.strictEqual(res.body.success, true);
-        assert.strictEqual(res.body.data.email, email);
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data.email).toBe(email);
     });
 
     test('should reject protected route without token', async () => {
         const res = await request(app).get('/api/users/me');
 
-        assert.strictEqual(res.status, 401);
+        expect(res.status).toBe(401);
     });
 
     test('should update user profile', async () => {
@@ -178,9 +179,9 @@ describe('Authentication Flow', () => {
                 lastName: 'Smith'
             });
 
-        assert.strictEqual(res.status, 200);
-        assert.strictEqual(res.body.success, true);
-        assert.strictEqual(res.body.data.firstName, 'Jane');
-        assert.strictEqual(res.body.data.lastName, 'Smith');
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data.firstName).toBe('Jane');
+        expect(res.body.data.lastName).toBe('Smith');
     });
 });

@@ -1,5 +1,4 @@
-import { describe, test, before, after } from 'node:test';
-import assert from 'node:assert';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import { setupDatabase } from './setup.js';
 import { prisma } from '#lib/prisma';
 import jwt from 'jsonwebtoken';
@@ -10,7 +9,7 @@ import { authMiddleware } from '#middlewares/auth.middleware';
 describe('Auth Middleware', () => {
   let app;
 
-  before(async () => {
+  beforeAll(async () => {
     setupDatabase();
     process.env.JWT_SECRET = 'votre_secret_jwt_de_32_caracteres_minimum';
     app = express();
@@ -23,13 +22,13 @@ describe('Auth Middleware', () => {
     });
   });
 
-  after(async () => {
+  afterAll(async () => {
     await prisma.$disconnect();
   });
 
   test('should reject request without token', async () => {
     const res = await request(app).get('/protected');
-    assert.strictEqual(res.status, 401);
+    expect(res.status).toBe(401);
   });
 
   test('should reject request with invalid token', async () => {
@@ -37,14 +36,14 @@ describe('Auth Middleware', () => {
       .get('/protected')
       .set('Authorization', 'Bearer invalidtoken');
 
-    assert.strictEqual(res.status, 401);
+    expect(res.status).toBe(401);
   });
 
   test('should reject malformed authorization header', async () => {
     const res = await request(app)
       .get('/protected')
       .set('Authorization', 'InvalidFormat');
-    assert.strictEqual(res.status, 401);
+    expect(res.status).toBe(401);
   });
 
   test('should accept request with valid token', async () => {
@@ -57,7 +56,7 @@ describe('Auth Middleware', () => {
       .get('/protected')
       .set('Authorization', `Bearer ${token}`);
 
-    assert.strictEqual(res.status, 200);
+    expect(res.status).toBe(200);
   });
 
   test('should attach decoded user to req.user', async () => {
@@ -80,9 +79,9 @@ describe('Auth Middleware', () => {
       .get('/me')
       .set('Authorization', `Bearer ${token}`);
 
-    assert.strictEqual(res.status, 200);
-    assert.strictEqual(res.body.id, user.id);
-    assert.strictEqual(res.body.password, undefined);
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(user.id);
+    expect(res.body.password).toBeUndefined();
   });
 
   test('should reject token if user does not exist in db', async () => {
@@ -106,6 +105,6 @@ describe('Auth Middleware', () => {
       .get('/protected')
       .set('Authorization', `Bearer ${token}`);
 
-    assert.strictEqual(res.status, 401);
+    expect(res.status).toBe(401);
   });
 });
