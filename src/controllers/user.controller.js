@@ -25,7 +25,14 @@ export class UserController {
      */
     static login = asyncHandler(async (req, res) => {
         const validatedData = validateData(loginSchema, req.body);
-        const result = await UserService.login(validatedData);
+        
+        // Extract metadata for login history
+        const metadata = {
+            ipAddress: req.ip || req.connection.remoteAddress,
+            userAgent: req.get('user-agent')
+        };
+        
+        const result = await UserService.login(validatedData, metadata);
 
         res.status(200).json({
             success: true,
@@ -68,14 +75,44 @@ export class UserController {
      */
     static logout = asyncHandler(async (req, res) => {
         const refreshToken = req.body.refreshToken;
+        const accessToken = req.token; // From auth middleware
         
-        if (refreshToken) {
-            await UserService.logout(refreshToken);
-        }
+        await UserService.logout(refreshToken, accessToken);
 
         res.status(200).json({
             success: true,
             message: 'Logged out successfully'
+        });
+    });
+
+    /**
+     * Get login history
+     * GET /api/users/me/login-history
+     */
+    static getLoginHistory = asyncHandler(async (req, res) => {
+        const limit = parseInt(req.query.limit) || 10;
+        const history = await UserService.getLoginHistory(req.user.id, limit);
+
+        res.status(200).json({
+            success: true,
+            data: history
+        });
+    });
+
+    /**
+     * Get failed login attempts
+     * GET /api/users/me/failed-attempts
+     */
+    static getFailedAttempts = asyncHandler(async (req, res) => {
+        const timeWindow = parseInt(req.query.timeWindow) || 15;
+        const count = await UserService.getFailedLoginAttempts(req.user.id, timeWindow);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                count,
+                timeWindowMinutes: timeWindow
+            }
         });
     });
 }

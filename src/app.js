@@ -6,6 +6,7 @@ import { httpLogger } from "#lib/logger";
 import { errorHandler } from "#middlewares/error-handler";
 import { notFoundHandler } from "#middlewares/not-found";
 import userRoutes from "#routes/user.routes";
+import adminRoutes from "#routes/admin.routes";
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/users", userRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Handlers
 app.use(notFoundHandler);

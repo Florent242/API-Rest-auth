@@ -62,25 +62,57 @@ export class UserService {
     /**
      * Login user
      */
-    static async login({ email, password }) {
+    static async login({ email, password }, metadata = {}) {
+        const { ipAddress, userAgent } = metadata;
+        
         // Find user
         const user = await prisma.user.findUnique({
             where: { email }
         });
 
+        // Log failed attempt if user not found
         if (!user) {
+            // Log failed login attempt (no userId available)
+            await prisma.loginHistory.create({
+                data: {
+                    userId: 'unknown',
+                    ipAddress,
+                    userAgent,
+                    success: false
+                }
+            }).catch(() => {}); // Ignore errors in logging
+            
             throw new UnauthorizedException('Invalid credentials');
         }
 
         // Verify password
         const isPasswordValid = await verifyPassword(user.password, password);
 
+        // Log failed attempt if password incorrect
         if (!isPasswordValid) {
+            await prisma.loginHistory.create({
+                data: {
+                    userId: user.id,
+                    ipAddress,
+                    userAgent,
+                    success: false
+                }
+            });
+            
             throw new UnauthorizedException('Invalid credentials');
         }
 
         // Check if user is disabled
         if (user.disabledAt) {
+            await prisma.loginHistory.create({
+                data: {
+                    userId: user.id,
+                    ipAddress,
+                    userAgent,
+                    success: false
+                }
+            });
+            
             throw new UnauthorizedException('Account is disabled');
         }
 
@@ -101,14 +133,18 @@ export class UserService {
             data: {
                 token: refreshToken,
                 userId: user.id,
+                ipAddress,
+                userAgent,
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
             }
         });
 
-        // Log login history
+        // Log successful login
         await prisma.loginHistory.create({
             data: {
                 userId: user.id,
+                ipAddress,
+                userAgent,
                 success: true
             }
         });
@@ -118,6 +154,53 @@ export class UserService {
             accessToken,
             refreshToken
         };
+    }
+
+    /**
+     * Get user login history
+     */
+    static async getLoginHistory(userId, limit = 10) {
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const history = await prisma.loginHistory.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            take: limit,
+            select: {
+                id: true,
+                ipAddress: true,
+                userAgent: true,
+                success: true,
+                createdAt: true
+            }
+        });
+
+        return history;
+    }
+
+    /**
+     * Get failed login attempts count
+     */
+    static async getFailedLoginAttempts(userId, timeWindowMinutes = 15) {
+        const timeWindow = new Date(Date.now() - timeWindowMinutes * 60 * 1000);
+        
+        const count = await prisma.loginHistory.count({
+            where: {
+                userId,
+                success: false,
+                createdAt: {
+                    gte: timeWindow
+                }
+            }
+        });
+
+        return count;
     }
 
     /**
@@ -156,13 +239,30 @@ export class UserService {
     }
 
     /**
-     * Logout user (revoke refresh token)
+     * Logout user (revoke refresh token and blacklist access token)
      */
-    static async logout(refreshToken) {
-        await prisma.refreshToken.updateMany({
-            where: { token: refreshToken },
-            data: { revokedAt: new Date() }
-        });
+    static async logout(refreshToken, accessToken) {
+        // Revoke refresh token
+        if (refreshToken) {
+            await prisma.refreshToken.updateMany({
+                where: { token: refreshToken },
+                data: { revokedAt: new Date() }
+            });
+        }
+
+        // Blacklist access token
+        if (accessToken) {
+            const { BlacklistService } = await import('./blacklist.service.js');
+            const { verifyToken } = await import('#lib/jwt');
+            
+            try {
+                const payload = await verifyToken(accessToken);
+                const expiresAt = new Date(payload.exp * 1000);
+                await BlacklistService.addToBlacklist(accessToken, payload.userId, expiresAt);
+            } catch (error) {
+                // If token is invalid/expired, no need to blacklist
+            }
+        }
 
         return { success: true, message: 'Logged out successfully' };
     }
