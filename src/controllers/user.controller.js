@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import userService from "#services/user.service";
 import { de } from "zod/locales";
 
@@ -87,6 +88,13 @@ const githubCallback = async (req, res) => {
       return res.status(401).json({ success: false, message: "Auth échouée" });
     }
 
+    // Génération du tokens JWT
+        const accessToken = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" } // tu peux ajuster la durée
+    );
+
     return res.status(200).json({
       success: true,
       message: "Authentification GitHub réussie",
@@ -95,7 +103,7 @@ const githubCallback = async (req, res) => {
         email: user.email,
         firstName: user.firstName
       },
-      // tokens: { accessToken, refreshToken }
+      tokens: accessToken 
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

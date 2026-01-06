@@ -3,7 +3,7 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
 // Sécurité : on vérifie la variable
 if (!process.env.DATABASE_URL) {
-  throw new Error("❌ DATABASE_URL est undefined");
+  throw new Error(" DATABASE_URL est undefined");
 }
 
 const adapter = new PrismaBetterSqlite3({
