@@ -5,6 +5,8 @@ import helmet from "helmet";
 import { httpLogger } from "#lib/logger";
 import { errorHandler } from "#middlewares/error-handler";
 import { notFoundHandler } from "#middlewares/not-found";
+
+import tokenRoutes from "#routes/token.routes";
 import userRoutes from "#routes/user.routes";
 import adminRoutes from "#routes/admin.routes";
 
@@ -23,6 +25,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
+
+app.use("/auth", tokenRoutes);
 
 // Handlers
 app.use(notFoundHandler);
