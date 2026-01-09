@@ -36,10 +36,12 @@ describe('Rate Limiting - Authentication Limiter', () => {
         password: 'wrongpassword'
       });
 
-    for (let i = 0; i < 5; i++) {
+    // Make 10 failed attempts to exceed the rate limit (max: 10 in test mode)
+    for (let i = 0; i < 10; i++) {
       await loginAttempt();
     }
 
+    // The 11th attempt should be rate limited
     const res = await loginAttempt();
     expect(res.status).toBe(429);
     expect(res.body.success).toBe(false);
@@ -81,10 +83,12 @@ describe('Rate Limiting - Registration Limiter', () => {
         lastName: 'User'
       });
 
-    for (let i = 0; i < 3; i++) {
+    // Make 10 registrations to exceed the rate limit (max: 10 in test mode)
+    for (let i = 0; i < 10; i++) {
       await registerAttempt(i);
     }
 
+    // The 11th attempt should be rate limited
     const res = await registerAttempt(999);
     expect(res.status).toBe(429);
     expect(res.body.success).toBe(false);

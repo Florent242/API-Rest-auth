@@ -28,11 +28,11 @@ export const generalLimiter = rateLimit({
 
 /**
  * Rate limiter strict pour les routes d'authentification
- * 5 tentatives par 15 minutes par IP (100 en test)
+ * 5 tentatives par 15 minutes par IP (10 en test pour permettre les tests)
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isTest ? 100 : 5, // Limite haute en test
+  max: isTest ? 10 : 5, // Limite raisonnable en test
   message: {
     success: false,
     error: 'Too many authentication attempts, please try again after 15 minutes.'
@@ -55,11 +55,11 @@ export const authLimiter = rateLimit({
 
 /**
  * Rate limiter pour l'inscription
- * 3 inscriptions par heure par IP (100 en test)
+ * 3 inscriptions par heure par IP (10 en test pour permettre les tests)
  */
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 heure
-  max: isTest ? 100 : 3, // Limite haute en test
+  max: isTest ? 10 : 3, // Limite raisonnable en test
   message: {
     success: false,
     error: 'Too many accounts created from this IP, please try again after an hour.'
