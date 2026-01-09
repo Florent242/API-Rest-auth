@@ -1,6 +1,6 @@
 const prisma = require("../lib/prisma");
 const bcrypt = require("bcrypt");
-const { UnauthorizedException, ConflictException } = require("../lib/exceptions");
+const { ConflictException } = require("../lib/exceptions");
 
 const registerUser = async ({ email, password, firstName, lastName }) => {
     // Vérifier si l'utilisateur existe déjà
@@ -28,30 +28,5 @@ const registerUser = async ({ email, password, firstName, lastName }) => {
     return safeUser;
 };
 
-const loginUser = async ({ email, password }) => {
-  // 1. Vérifier si l'utilisateur existe
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
+module.exports = { registerUser };
 
-  if (!user) {
-    throw new UnauthorizedException('Email ou mot de passe incorrect');
-  }
-
-  // 2. Vérifier le mot de passe
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-
-  if (!isPasswordValid) {
-    throw new UnauthorizedException('Email ou mot de passe incorrect');
-  }
-
-  // 3. Ne pas retourner le mot de passe
-  const { password: _, ...safeUser } = user;
-
-  return safeUser;
-};
-
-module.exports = {
-  registerUser,
-  loginUser,
-};
