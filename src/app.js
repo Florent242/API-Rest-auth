@@ -4,11 +4,24 @@ import helmet from "helmet";
 import tokenRoutes from "./routes/token.routes.js"; // ← IMPORTANT
 import { TokenService } from "./services/token.service.js"; // ← IMPORTANT
 
+import { httpLogger } from "#lib/logger";
+import { errorHandler } from "#middlewares/error-handler";
+import { notFoundHandler } from "#middlewares/not-found";
+import { generalLimiter } from "#middlewares/rate-limit.middleware";
+import userRoutes from "#routes/user.routes";
+import adminRoutes from "#routes/admin.routes";
+// Les routes seront importez ici
+import authRouter from "#routes/auth.routes"
+
+// import userRoutes from "#routes/user.routes";
+
 const app = express();
 
 // Middlewares
 app.use(helmet());
 app.use(cors());
+app.use(httpLogger);
+app.use(generalLimiter);
 app.use(express.json());
 
 // Route racine
@@ -52,6 +65,9 @@ app.get("/test-token", async (req, res) => {
 
 // Routes d'authentification
 app.use("/auth", tokenRoutes); // ← IMPORTANT
+app.use("/api/users", userRoutes);
+app.use("/api/admin", adminRoutes);
+app.use(authRouter);
 
 // 404 Handler
 app.use((req, res) => {
