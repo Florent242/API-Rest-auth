@@ -1,7 +1,6 @@
 // tests/integration/setup.js
 import { execSync } from 'node:child_process';
-import { unlinkSync } from 'node:fs';
-import { existsSync } from 'node:fs';
+import { unlinkSync, existsSync } from 'node:fs';
 import path from 'node:path';
 
 // Set test environment variables if not already set
@@ -13,15 +12,20 @@ if (!process.env.JWT_SECRET) {
 }
 
 export function setupDatabase() {
-  // Remove existing test database
-  const dbPath = process.env.DATABASE_URL.replace('file:', '');
-  if (existsSync(dbPath)) {
-    unlinkSync(dbPath);
+  try {
+    // Remove existing test database
+    const dbPath = process.env.DATABASE_URL.replace('file:', '');
+    if (existsSync(dbPath)) {
+      unlinkSync(dbPath);
+    }
+    
+    // Push schema to create tables (synchronous)
+    execSync('npx prisma db push --skip-generate', {
+      env: { ...process.env },
+      stdio: 'pipe',
+    });
+  } catch (error) {
+    console.error('Database setup failed:', error.message);
+    throw error;
   }
-  
-  // Push schema to create tables
-  execSync('npx prisma db push', {
-    env: process.env,
-    stdio: 'inherit',
-  });
 }

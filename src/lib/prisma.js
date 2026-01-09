@@ -2,10 +2,18 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import Database from 'better-sqlite3';
 import dotenv from 'dotenv';
+import path from 'path';
 
-// Only load .env if variables aren't already set (allows test to override)
+// Load environment variables
+dotenv.config();
+
+// Ensure DATABASE_URL is set (with fallback for tests)
 if (!process.env.DATABASE_URL) {
-  dotenv.config();
+  if (process.env.NODE_ENV === 'test') {
+    process.env.DATABASE_URL = `file:${path.resolve(process.cwd(), 'test.db')}`;
+  } else {
+    throw new Error('DATABASE_URL environment variable is required');
+  }
 }
 
 let prismaInstance = null;
@@ -14,11 +22,6 @@ let prismaInstance = null;
 export const prisma = new Proxy({}, {
   get(target, prop) {
     if (!prismaInstance) {
-      // Ensure DATABASE_URL is set at initialization time
-      if (!process.env.DATABASE_URL) {
-        throw new Error('DATABASE_URL environment variable is required');
-      }
-      
       // Extract the database path from the DATABASE_URL
       const dbPath = process.env.DATABASE_URL.replace('file:', '');
       
