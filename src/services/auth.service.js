@@ -1,4 +1,4 @@
-import prisma from "#lib/prisma"
+import { prisma } from "#lib/prisma"
 import { mailer } from "#lib/mailer"
 import { signToken, verifyToken} from "#lib/jwt"
 import { ConflictException, UnauthorizedException, BadRequestException } from "#lib/exceptions"
