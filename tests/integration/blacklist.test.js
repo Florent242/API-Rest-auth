@@ -44,7 +44,10 @@ describe('Token Blacklist', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(protectedRes.status).toBe(401);
-    expect(protectedRes.body.error.includes('revoked').toBeTruthy() || protectedRes.body.error.includes('Invalid'));
+    expect(
+      protectedRes.body.error.includes('revoked') || 
+      protectedRes.body.error.includes('Invalid')
+    ).toBeTruthy();
   });
 
   test('should prevent access with blacklisted token', async () => {
