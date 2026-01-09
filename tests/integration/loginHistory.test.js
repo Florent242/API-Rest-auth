@@ -1,13 +1,16 @@
-import { describe, test, before } from 'node:test';
-import assert from 'node:assert';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import { setupDatabase } from './setup.js';
 import app from '../../src/app.js';
 import { prisma } from '#lib/prisma';
 
 describe('Login History Tracking', () => {
-  before(async () => {
+  beforeAll(async () => {
     setupDatabase();
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
   });
 
   test('should record successful login in history', async () => {
@@ -29,21 +32,21 @@ describe('Login History Tracking', () => {
       .send({ email, password: 'password123' });
 
     const token = loginRes.body.data?.accessToken;
-    assert.ok(token, 'Should receive access token');
+    expect(token).toBeTruthy() // 'Should receive access token';
 
     // Check history
     const historyRes = await request(app)
       .get('/api/users/me/login-history')
       .set('Authorization', `Bearer ${token}`);
 
-    assert.strictEqual(historyRes.status, 200);
-    assert.ok(historyRes.body.success);
-    assert.ok(Array.isArray(historyRes.body.data));
-    assert.ok(historyRes.body.data.length > 0, 'Should have login history');
+    expect(historyRes.status).toBe(200);
+    expect(historyRes.body.success).toBeTruthy();
+    expect(Array.isArray(historyRes.body.data)).toBe(true);
+    expect(historyRes.body.data.length > 0).toBeTruthy(); // 'Should have login history'
     
     const latestEntry = historyRes.body.data[0];
-    assert.strictEqual(latestEntry.success, true);
-    assert.ok(latestEntry.createdAt);
+    expect(latestEntry.success).toBe(true);
+    expect(latestEntry.createdAt).toBeTruthy();
   });
 
   test('should record failed login attempts', async () => {
@@ -71,42 +74,53 @@ describe('Login History Tracking', () => {
       .get('/api/users/me/login-history')
       .set('Authorization', `Bearer ${token}`);
 
-    assert.strictEqual(historyRes.status, 200);
+    expect(historyRes.status).toBe(200);
     
     // Should have at least one failed attempt
     const failedAttempts = historyRes.body.data.filter(entry => !entry.success);
-    assert.ok(failedAttempts.length > 0, 'Should have failed login attempts');
+    expect(failedAttempts.length > 0).toBeTruthy() // 'Should have failed login attempts';
   });
 
   test('should include IP address and user agent in history', async () => {
     const email = `history-metadata-${Date.now()}@example.com`;
+    const password = 'password123';
     
-    // Register and get token
-    const registerRes = await request(app)
+    // Register user
+    await request(app)
       .post('/api/users/register')
       .send({
         email,
-        password: 'password123',
+        password,
         firstName: 'Metadata',
         lastName: 'Test'
       });
 
-    const token = registerRes.body.data?.accessToken;
+    // Login to create login history entry
+    await request(app)
+      .post('/api/users/login')
+      .send({ email, password });
+
+    // Get new token after login
+    const loginRes = await request(app)
+      .post('/api/users/login')
+      .send({ email, password });
+
+    const token = loginRes.body.data?.accessToken;
 
     // Check history
     const historyRes = await request(app)
       .get('/api/users/me/login-history')
       .set('Authorization', `Bearer ${token}`);
 
-    assert.strictEqual(historyRes.status, 200);
+    expect(historyRes.status).toBe(200);
     
     const entries = historyRes.body.data;
-    assert.ok(entries.length > 0);
+    expect(entries.length > 0).toBeTruthy();
     
     // Check that entries have metadata fields
     const entry = entries[0];
-    assert.ok('ipAddress' in entry, 'Should have ipAddress field');
-    assert.ok('userAgent' in entry, 'Should have userAgent field');
+    expect('ipAddress' in entry).toBeTruthy(); // 'Should have ipAddress field'
+    expect('userAgent' in entry).toBeTruthy(); // 'Should have userAgent field'
   });
 
   test('should limit history results based on query parameter', async () => {
@@ -136,8 +150,8 @@ describe('Login History Tracking', () => {
       .get('/api/users/me/login-history?limit=2')
       .set('Authorization', `Bearer ${token}`);
 
-    assert.strictEqual(historyRes.status, 200);
-    assert.ok(historyRes.body.data.length <= 2, 'Should respect limit parameter');
+    expect(historyRes.status).toBe(200);
+    expect(historyRes.body.data.length <= 2).toBeTruthy() // 'Should respect limit parameter';
   });
 
   test('should return failed attempts count', async () => {
@@ -167,16 +181,16 @@ describe('Login History Tracking', () => {
       .get('/api/users/me/failed-attempts')
       .set('Authorization', `Bearer ${token}`);
 
-    assert.strictEqual(countRes.status, 200);
-    assert.ok(countRes.body.success);
-    assert.ok(typeof countRes.body.data.count === 'number');
-    assert.strictEqual(countRes.body.data.timeWindowMinutes, 15);
+    expect(countRes.status).toBe(200);
+    expect(countRes.body.success).toBeTruthy();
+    expect(typeof countRes.body.data.count === 'number').toBeTruthy();
+    expect(countRes.body.data.timeWindowMinutes).toBe(15);
   });
 
   test('should require authentication to view history', async () => {
     const res = await request(app).get('/api/users/me/login-history');
     
-    assert.strictEqual(res.status, 401, 'Should require authentication');
+    expect(res.status).toBe(401);
   });
 
   test('should order history by most recent first', async () => {
@@ -210,13 +224,13 @@ describe('Login History Tracking', () => {
       .get('/api/users/me/login-history')
       .set('Authorization', `Bearer ${token}`);
 
-    assert.strictEqual(historyRes.status, 200);
+    expect(historyRes.status).toBe(200);
     
     const entries = historyRes.body.data;
     if (entries.length > 1) {
       const date1 = new Date(entries[0].createdAt);
       const date2 = new Date(entries[1].createdAt);
-      assert.ok(date1 >= date2, 'Should be ordered by most recent first');
+      expect(date1 >= date2).toBeTruthy() // 'Should be ordered by most recent first';
     }
   });
 });
