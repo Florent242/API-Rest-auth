@@ -2,13 +2,24 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 
-const authRoutes = require('./routes/auth.routes');
+import { httpLogger } from "#lib/logger";
+import { errorHandler } from "#middlewares/error-handler";
+import { notFoundHandler } from "#middlewares/not-found";
+import { generalLimiter } from "#middlewares/rate-limit.middleware";
+import userRoutes from "#routes/user.routes";
+import adminRoutes from "#routes/admin.routes";
+// Les routes seront importez ici
+import authRouter from "#routes/auth.routes"
+
+// import userRoutes from "#routes/user.routes";
 
 const app = express();
 
 // Middlewares globaux
 app.use(helmet());
 app.use(cors());
+app.use(httpLogger);
+app.use(generalLimiter);
 app.use(express.json());
 
 // Routes
@@ -16,7 +27,9 @@ app.get('/', (req, res) => {
   res.json({ success: true, message: 'API Express opérationnelle' });
 });
 
-app.use('/auth', authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/admin", adminRoutes);
+app.use(authRouter);
 
 // Middleware NOT FOUND
 app.use((req, res, next) => {

@@ -1,57 +1,119 @@
-const prisma = require("../lib/prisma");
-const bcrypt = require("bcrypt");
-const { UnauthorizedException, ConflictException } = require("../lib/exceptions");
+import prisma from "#lib/prisma"
+import { mailer } from "#lib/mailer"
+import { signToken, verifyToken} from "#lib/jwt"
+import { ConflictException, UnauthorizedException, BadRequestException } from "#lib/exceptions"
 
-const registerUser = async ({ email, password, firstName, lastName }) => {
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+// Ajoute des jours à une date
+function addDays(d, days) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + days);
+  return x;
+}
 
-    if (existingUser) {
-        throw new ConflictException("L'email est déjà utilisée.");
+export class AuthService {
+    // Vérifie l'email d'un utilisateur à partir d'un token
+    static async verifyEmail(token) {
+    if (!token || typeof token !== "string") {
+      throw new BadRequestException("Missing token")
     }
 
-    // Hasher le mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const record = await prisma.verificationToken.findUnique({
+      where: { token },
+    })
 
-    // Créer l'utilisateur
-    const user = await prisma.user.create({
-        data: {
-            email,
-            password: hashedPassword,
-            firstName,
-            lastName,
-        },
+    if (!record) throw new BadRequestException("Invalid token");
+    if (record.expiresAt < new Date()) {
+      throw new BadRequestException("Token expired")
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: record.userId },
+        data: { emailVerifiedAt: new Date() },
+      })
+
+      await tx.verificationToken.delete({ where: { token } });
+    })
+  }
+
+  // Rafraîchit un token d'accès à partir d'un token de rafraîchissement
+  static async refresh(refreshToken) {
+    if (!refreshToken) throw new BadRequestException("Missing refreshToken")
+
+    const stored = await prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+    })
+
+    if (!stored) throw new UnauthorizedException("Invalid refresh token")
+    if (stored.revokedAt) throw new UnauthorizedException("Refresh token revoked")
+    if (stored.expiresAt < new Date()) throw new UnauthorizedException("Refresh token expired")
+
+    // Optionnel : vérifier signature JWT aussi
+    await verifyToken(refreshToken).catch(() => {
+      throw new UnauthorizedException("Invalid refresh token")
+    })
+
+    const accessToken = await signToken({ userId: stored.userId })
+    return { accessToken }
+  }
+
+  // Envoie un email de réinitialisation de mot de passe
+  static async forgotPassword(email) {
+    if (!email) throw new BadRequestException("Email is required");
+
+    // Vérifie si l'utilisateur existe
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // Ne pas révéler que l'email n'existe pas
+      return;
+    }
+
+    // Crée un token unique pour le reset
+    const token = crypto.randomUUID();
+    const expiresAt = addDays(new Date(), 1); // valable 24h
+
+    await prisma.passwordResetToken.create({
+      data: {
+        token,
+        userId: user.id,
+        expiresAt,
+      },
     });
 
-    //Ne pas retourner le mot de passe
-    const { password: _, ...safeUser } = user;
-    return safeUser;
-};
-
-const loginUser = async ({ email, password }) => {
-  // 1. Vérifier si l'utilisateur existe
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (!user) {
-    throw new UnauthorizedException('Email ou mot de passe incorrect');
+    if (process.env.MAIL_HOST) {
+      await mailer.sendResetPassword(user.email, token);
+    } else {
+      // En dev, on log le lien
+      console.log(`[DEV] Password reset link for ${email}: ${resetUrl}`);
+    }
   }
 
-  // 2. Vérifier le mot de passe
-  const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Réinitialise le mot de passe avec le token et le nouveau mot de passe
+  static async resetPassword(token, newPassword) {
+    if (!token || !newPassword) {
+      throw new BadRequestException("Token and new password are required");
+    }
 
-  if (!isPasswordValid) {
-    throw new UnauthorizedException('Email ou mot de passe incorrect');
+    // Cherche le token et vérifie expiration
+    const record = await prisma.passwordResetToken.findUnique({
+      where: { token },
+    });
+
+    if (!record) throw new BadRequestException("Invalid token");
+    if (record.expiresAt < new Date()) throw new BadRequestException("Token expired");
+
+    // Hash le nouveau mot de passe
+    const hashed = await hashPassword(newPassword);
+
+    // Update user et supprime le token
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: record.userId },
+        data: { password: hashed },
+      });
+
+      await tx.passwordResetToken.delete({ where: { token } });
+    });
   }
 
-  // 3. Ne pas retourner le mot de passe
-  const { password: _, ...safeUser } = user;
-
-  return safeUser;
-};
-
-module.exports = {
-  registerUser,
-  loginUser,
-};
+}
