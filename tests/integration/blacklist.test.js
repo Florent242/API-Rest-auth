@@ -1,5 +1,4 @@
-import { describe, test, before, after } from 'node:test';
-import assert from 'node:assert';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import { setupDatabase } from './setup.js';
 import app from '../../src/app.js';
@@ -7,11 +6,11 @@ import { prisma } from '#lib/prisma';
 import { BlacklistService } from '#services/blacklist.service';
 
 describe('Token Blacklist', () => {
-  before(async () => {
+  beforeAll(async () => {
     setupDatabase();
   });
 
-  after(async () => {
+  afterAll(async () => {
     await prisma.$disconnect();
   });
 
@@ -37,15 +36,15 @@ describe('Token Blacklist', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ refreshToken });
 
-    assert.strictEqual(logoutRes.status, 200);
+    expect(logoutRes.status).toBe(200);
 
     // Try to use the blacklisted token
     const protectedRes = await request(app)
       .get('/api/users/me')
       .set('Authorization', `Bearer ${accessToken}`);
 
-    assert.strictEqual(protectedRes.status, 401);
-    assert.ok(protectedRes.body.error.includes('revoked') || protectedRes.body.error.includes('Invalid'));
+    expect(protectedRes.status).toBe(401);
+    expect(protectedRes.body.error.includes('revoked').toBeTruthy() || protectedRes.body.error.includes('Invalid'));
   });
 
   test('should prevent access with blacklisted token', async () => {
@@ -73,7 +72,7 @@ describe('Token Blacklist', () => {
       .get('/api/users/me')
       .set('Authorization', `Bearer ${token}`);
 
-    assert.strictEqual(res.status, 401);
+    expect(res.status).toBe(401);
   });
 
   test('should check if token is blacklisted', async () => {
@@ -83,14 +82,14 @@ describe('Token Blacklist', () => {
 
     // Token should not be blacklisted initially
     const isBlacklistedBefore = await BlacklistService.isBlacklisted(token);
-    assert.strictEqual(isBlacklistedBefore, false);
+    expect(isBlacklistedBefore).toBe(false);
 
     // Add to blacklist
     await BlacklistService.addToBlacklist(token, userId, expiresAt);
 
     // Token should now be blacklisted
     const isBlacklistedAfter = await BlacklistService.isBlacklisted(token);
-    assert.strictEqual(isBlacklistedAfter, true);
+    expect(isBlacklistedAfter).toBe(true);
   });
 
   test('should revoke refresh token', async () => {
@@ -116,7 +115,7 @@ describe('Token Blacklist', () => {
       where: { token: refreshToken }
     });
 
-    assert.ok(token.revokedAt !== null);
+    expect(token.revokedAt !== null).toBeTruthy();
   });
 
   test('should revoke all user tokens', async () => {
@@ -141,7 +140,7 @@ describe('Token Blacklist', () => {
 
     // Revoke all tokens
     const count = await BlacklistService.revokeAllUserTokens(userId);
-    assert.ok(count >= 1);
+    expect(count >= 1).toBeTruthy();
 
     // Verify all tokens are revoked
     const activeTokens = await prisma.refreshToken.count({
@@ -151,7 +150,7 @@ describe('Token Blacklist', () => {
       }
     });
 
-    assert.strictEqual(activeTokens, 0);
+    expect(activeTokens).toBe(0);
   });
 });
 
@@ -167,27 +166,27 @@ describe('Token Cleanup Job', () => {
     // Run cleanup
     const result = await BlacklistService.cleanupExpiredTokens();
 
-    assert.ok(typeof result.deletedAccessTokens === 'number');
-    assert.ok(result.total >= 0);
+    expect(typeof result.deletedAccessTokens === 'number').toBeTruthy();
+    expect(result.total >= 0).toBeTruthy();
   });
 
   test('should clean up old login history', async () => {
     const count = await BlacklistService.cleanupOldLoginHistory();
-    assert.ok(typeof count === 'number');
+    expect(typeof count === 'number').toBeTruthy();
   });
 
   test('should get blacklist statistics', async () => {
     const stats = await BlacklistService.getBlacklistStats();
     
-    assert.ok(typeof stats.blacklistedAccessTokens === 'number');
-    assert.ok(typeof stats.revokedRefreshTokens === 'number');
+    expect(typeof stats.blacklistedAccessTokens === 'number').toBeTruthy();
+    expect(typeof stats.revokedRefreshTokens === 'number').toBeTruthy();
   });
 });
 
 describe('Admin Endpoints', () => {
   let adminToken;
 
-  before(async () => {
+  beforeAll(async () => {
     // Create admin user
     const registerRes = await request(app)
       .post('/api/users/register')
@@ -206,10 +205,10 @@ describe('Admin Endpoints', () => {
       .get('/api/admin/blacklist/stats')
       .set('Authorization', `Bearer ${adminToken}`);
 
-    assert.strictEqual(res.status, 200);
-    assert.ok(res.body.success);
-    assert.ok(typeof res.body.data.blacklistedAccessTokens === 'number');
-    assert.ok(typeof res.body.data.revokedRefreshTokens === 'number');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBeTruthy();
+    expect(typeof res.body.data.blacklistedAccessTokens === 'number').toBeTruthy();
+    expect(typeof res.body.data.revokedRefreshTokens === 'number').toBeTruthy();
   });
 
   test('should run manual cleanup', async () => {
@@ -217,13 +216,13 @@ describe('Admin Endpoints', () => {
       .post('/api/admin/cleanup')
       .set('Authorization', `Bearer ${adminToken}`);
 
-    assert.strictEqual(res.status, 200);
-    assert.ok(res.body.success);
-    assert.ok(res.body.data);
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBeTruthy();
+    expect(res.body.data).toBeTruthy();
   });
 
   test('should require authentication for admin routes', async () => {
     const res = await request(app).get('/api/admin/blacklist/stats');
-    assert.strictEqual(res.status, 401);
+    expect(res.status).toBe(401);
   });
 });
