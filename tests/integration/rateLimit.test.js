@@ -1,8 +1,17 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../src/app.js';
+import { setupDatabase } from './setup.js';
 
 describe('Rate Limiting - General Limiter', () => {
+  beforeAll(async () => {
+    await setupDatabase();
+  });
+
+  afterAll(async () => {
+    // Cleanup if needed
+  });
+
   test('should allow requests under the limit', async () => {
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
@@ -20,9 +29,13 @@ describe('Rate Limiting - Authentication Limiter', () => {
     const res = await request(app)
       .post('/api/users/login')
       .send({
-        email: 'test@example.com',
+        email: `test-${Date.now()}@example.com`,
         password: 'wrongpassword'
       });
+    
+    if (![401, 400].includes(res.status)) {
+      console.log('Unexpected status:', res.status, 'Body:', res.body);
+    }
     
     expect([401, 400].includes(res.status)).toBe(true);
   });
@@ -36,10 +49,12 @@ describe('Rate Limiting - Authentication Limiter', () => {
         password: 'wrongpassword'
       });
 
-    for (let i = 0; i < 5; i++) {
+    // Make 10 failed attempts to exceed the rate limit (max: 10 in test mode)
+    for (let i = 0; i < 10; i++) {
       await loginAttempt();
     }
 
+    // The 11th attempt should be rate limited
     const res = await loginAttempt();
     expect(res.status).toBe(429);
     expect(res.body.success).toBe(false);
@@ -81,10 +96,12 @@ describe('Rate Limiting - Registration Limiter', () => {
         lastName: 'User'
       });
 
-    for (let i = 0; i < 3; i++) {
+    // Make 10 registrations to exceed the rate limit (max: 10 in test mode)
+    for (let i = 0; i < 10; i++) {
       await registerAttempt(i);
     }
 
+    // The 11th attempt should be rate limited
     const res = await registerAttempt(999);
     expect(res.status).toBe(429);
     expect(res.body.success).toBe(false);

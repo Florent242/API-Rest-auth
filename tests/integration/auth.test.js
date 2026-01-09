@@ -91,7 +91,7 @@ describe('Authentication Flow', () => {
         const password = 'password123';
 
         // Register user first
-        await request(app)
+        const registerRes = await request(app)
             .post('/api/users/register')
             .send({
                 email,
@@ -100,10 +100,20 @@ describe('Authentication Flow', () => {
                 lastName: 'Doe'
             });
 
+        // Debug: log register response
+        if (registerRes.status !== 201) {
+            console.log('Register failed:', registerRes.status, registerRes.body);
+        }
+
         // Login
         const res = await request(app)
             .post('/api/users/login')
             .send({ email, password });
+
+        // Debug: log login response if failed
+        if (res.status !== 200) {
+            console.log('Login failed:', res.status, res.body);
+        }
 
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);

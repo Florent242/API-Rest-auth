@@ -1,6 +1,8 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import tokenRoutes from "./routes/token.routes.js"; // ← IMPORTANT
+import { TokenService } from "./services/token.service.js"; // ← IMPORTANT
 
 import { httpLogger } from "#lib/logger";
 import { errorHandler } from "#middlewares/error-handler";
@@ -15,35 +17,73 @@ import authRouter from "#routes/auth.routes"
 
 const app = express();
 
-// Middlewares globaux
+// Middlewares
 app.use(helmet());
 app.use(cors());
 app.use(httpLogger);
 app.use(generalLimiter);
 app.use(express.json());
 
-// Routes
-app.get('/', (req, res) => {
-  res.json({ success: true, message: 'API Express opérationnelle' });
+// Route racine
+app.get("/", (req, res) => {
+  res.json({ 
+    success: true, 
+    message: "API d'authentification REST",
+    version: "1.0.0",
+    endpoints: [
+      "GET    /                 - Cette page",
+      "GET    /test-token       - Test service token",
+      "GET    /auth/test        - Test routes token",
+      "POST   /auth/refresh     - Rafraîchir token",
+      "GET    /auth/sessions    - Voir sessions (protégé)",
+      "DELETE /auth/sessions/:id - Déconnecter session"
+    ]
+  });
 });
 
+// Test du service Token
+app.get("/test-token", async (req, res) => {
+  try {
+    const token = await TokenService.createRefreshToken(123, {
+      device: req.headers['user-agent'] || 'Inconnu',
+      ipAddress: req.ip
+    });
+    
+    res.json({
+      success: true,
+      token: {
+        value: token.token.substring(0, 15) + "...",
+        device: token.device,
+        expiresAt: token.expiresAt.toISOString()
+      },
+      message: "✅ Service token fonctionne !"
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Routes d'authentification
+app.use("/auth", tokenRoutes); // ← IMPORTANT
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use(authRouter);
 
-// Middleware NOT FOUND
-app.use((req, res, next) => {
+// 404 Handler
+app.use((req, res) => {
   res.status(404).json({
-    message: 'Route not found',
+    success: false,
+    error: `Route ${req.method} ${req.path} non trouvée`
   });
 });
 
-// Middleware GLOBAL d'erreur
+// Error Handler
 app.use((err, req, res, next) => {
-  res.status(err.statusCode || 500).json({
-    message: err.message || 'Internal Server Error',
-    details: err.details || null,
+  console.error("❌ Erreur:", err);
+  res.status(500).json({
+    success: false,
+    error: "Erreur serveur interne"
   });
 });
 
-module.exports = app;
+export default app;

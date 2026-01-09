@@ -47,8 +47,18 @@ describe('Auth Middleware', () => {
   });
 
   test('should accept request with valid token', async () => {
+    // Create a real user first
+    const user = await prisma.user.create({
+      data: {
+        email: `valid-token-${Date.now()}@test.co`,
+        password: 'password',
+        firstName: 'Test',
+        lastName: 'User'
+      }
+    });
+
     const token = jwt.sign(
-      { userId: 'test-user-id', email: 'florent@test.co' },
+      { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
