@@ -79,8 +79,17 @@ describe('Token Blacklist', () => {
   });
 
   test('should check if token is blacklisted', async () => {
+    // Create a real user first
+    const user = await prisma.user.create({
+      data: {
+        email: `blacklist-check-${Date.now()}@example.com`,
+        password: 'password123',
+        firstName: 'Test',
+        lastName: 'User'
+      }
+    });
+
     const token = 'test-token-' + Date.now();
-    const userId = 'test-user-id';
     const expiresAt = new Date(Date.now() + 3600000);
 
     // Token should not be blacklisted initially
@@ -88,7 +97,7 @@ describe('Token Blacklist', () => {
     expect(isBlacklistedBefore).toBe(false);
 
     // Add to blacklist
-    await BlacklistService.addToBlacklist(token, userId, expiresAt);
+    await BlacklistService.addToBlacklist(token, user.id, expiresAt);
 
     // Token should now be blacklisted
     const isBlacklistedAfter = await BlacklistService.isBlacklisted(token);
@@ -159,12 +168,21 @@ describe('Token Blacklist', () => {
 
 describe('Token Cleanup Job', () => {
   test('should clean up expired blacklisted tokens', async () => {
+    // Create a real user first
+    const user = await prisma.user.create({
+      data: {
+        email: `cleanup-${Date.now()}@example.com`,
+        password: 'password123',
+        firstName: 'Cleanup',
+        lastName: 'Test'
+      }
+    });
+
     const expiredToken = 'expired-token-' + Date.now();
-    const userId = 'test-user';
     const expiredDate = new Date(Date.now() - 3600000); // 1 hour ago
 
     // Add expired token to blacklist
-    await BlacklistService.addToBlacklist(expiredToken, userId, expiredDate);
+    await BlacklistService.addToBlacklist(expiredToken, user.id, expiredDate);
 
     // Run cleanup
     const result = await BlacklistService.cleanupExpiredTokens();
