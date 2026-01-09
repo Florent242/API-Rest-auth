@@ -23,6 +23,7 @@ app.use(cors());
 app.use(httpLogger);
 app.use(generalLimiter);
 app.use(express.json());
+app.use(express.static('src/public'));
 
 // Route racine
 app.get("/", (req, res) => {
