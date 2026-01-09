@@ -3,7 +3,7 @@ dotenv.config();
 
 import app from "./app.js";
 import { logger } from "#lib/logger";
-import { startJobs } from "./jobs/cleanup.job.js";
+import { startCleanupJobs } from "./jobs/cleanup.job.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -12,9 +12,9 @@ app.listen(PORT, () => {
   
   // Start cron jobs only in production
   if (process.env.NODE_ENV === 'production') {
-    startJobs();
-    logger.info('Cron jobs started');
+    startCleanupJobs();
+    logger.info('Cleanup jobs started');
   } else {
-    logger.info('Cron jobs disabled in development mode');
+    logger.info('Cleanup jobs disabled in development mode');
   }
 });
