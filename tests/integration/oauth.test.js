@@ -1,7 +1,8 @@
-const request = require('supertest');
-const app = require('../../src/app');
-const prisma = require('../../src/config/database');
-const jwt = require('jsonwebtoken');
+import { describe, test, expect, beforeEach, afterAll } from '@jest/globals';
+import request from 'supertest';
+import app from '../../src/app.js';
+import prisma from '../../src/config/database.js';
+import jwt from 'jsonwebtoken';
 
 describe('OAuth Tests', () => {
   let testUser;
