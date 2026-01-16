@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { TokenService } from "#services/token.service";
 import { asyncHandler } from "#lib/async-handler";
-import { authenticate } from "#middlewares/auth.middleware";
+import { authMiddleware as authenticate } from "#middlewares/auth.middleware";
 
 const router = Router();
 

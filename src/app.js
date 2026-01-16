@@ -10,12 +10,11 @@ import { notFoundHandler } from "#middlewares/not-found";
 import { generalLimiter } from "#middlewares/rate-limit.middleware";
 import userRoutes from "#routes/user.routes";
 import adminRoutes from "#routes/admin.routes";
-// Les routes seront importez ici
-import authRouter from "#routes/auth.routes"
-const twoFactorRoutes = require('./routes/twoFactorRoutes');
-const oauthRoutes = require('./routes/oauthRoutes');
-const userRoutes2 = require('./routes/userRoutes');
-const passport = require('./config/passport');
+import authRouter from "#routes/auth.routes";
+import twoFactorRoutes from './routes/twoFactorRoutes.js';
+import oauthRoutes from './routes/oauthRoutes.js';
+import userRoutes2 from './routes/userRoutes.js';
+// import passport from './config/passport.js';
 
 // import userRoutes from "#routes/user.routes";
 
@@ -28,7 +27,7 @@ app.use(httpLogger);
 app.use(generalLimiter);
 app.use(express.json());
 app.use(express.static('src/public'));
-app.use(passport.initialize());
+// app.use(passport.initialize());
 
 // Route racine
 app.get("/", (req, res) => {
