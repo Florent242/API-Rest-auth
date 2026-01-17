@@ -72,7 +72,7 @@ app.get("/test-token", async (req, res) => {
 app.use("/auth", tokenRoutes); // ← IMPORTANT
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
-app.use(authRouter);
+app.use("/auth", authRouter); // Vérification email, reset password
 app.use("/2fa", twoFactorRoutes);
 app.use("/oauth", oauthRoutes);
 app.use("/user", userRoutes2);
@@ -85,13 +85,7 @@ app.use((req, res) => {
   });
 });
 
-// Error Handler
-app.use((err, req, res, next) => {
-  console.error("❌ Erreur:", err);
-  res.status(500).json({
-    success: false,
-    error: "Erreur serveur interne"
-  });
-});
+// Error Handler (doit être en dernier)
+app.use(errorHandler);
 
 export default app;

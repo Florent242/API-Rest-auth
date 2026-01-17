@@ -1,4 +1,5 @@
 import { prisma } from '#lib/prisma';
+import { mailer } from '#lib/mailer';
 import crypto from 'crypto';
 
 export class VerificationService {
@@ -27,6 +28,32 @@ export class VerificationService {
         });
         
         return verificationToken.token;
+    }
+    
+    /**
+     * Send verification email to a user
+     */
+    static async sendVerificationEmail(email) {
+        // Find user by email
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+        
+        if (!user) {
+            throw new Error('User not found');
+        }
+        
+        if (user.emailVerifiedAt) {
+            throw new Error('Email already verified');
+        }
+        
+        // Generate new token
+        const token = await this.generateVerificationToken(user.id);
+        
+        // Send email
+        await mailer.sendVerification(email, token);
+        
+        return true;
     }
     
     /**

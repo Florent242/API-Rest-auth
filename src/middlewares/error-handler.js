@@ -2,11 +2,13 @@ import { HttpException } from "#lib/exceptions";
 import { logger } from "#lib/logger";
 
 export function errorHandler(err, req, res, next) {
-  if (err instanceof HttpException) {
-    logger.warn({ err, path: req.path }, err.message);
-  } else {
-    logger.error({ err, path: req.path }, "Unhandled error");
-  }
+  // Log ALL errors with full stack
+  logger.error({ 
+    err, 
+    path: req.path,
+    body: req.body,
+    stack: err.stack 
+  }, "Error occurred");
 
   if (err instanceof HttpException) {
     return res.status(err.statusCode).json({
