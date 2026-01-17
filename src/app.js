@@ -12,8 +12,8 @@ import { generalLimiter } from "#middlewares/rate-limit.middleware";
 import userRoutes from "#routes/user.routes";
 import adminRoutes from "#routes/admin.routes";
 import authRouter from "#routes/auth.routes";
-import twoFactorRoutes from './routes/twoFactorRoutes.js';
-import oauthRoutes from './routes/oauthRoutes.js';
+import twoFactorRoutes from './routes/twoFactor.routes.js';
+import oauthRoutes from './routes/oauth.routes.js';
 import userRoutes2 from './routes/userRoutes.js';
 // import passport from './config/passport.js';
 

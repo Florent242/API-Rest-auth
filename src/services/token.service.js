@@ -188,7 +188,7 @@ export class TokenService {
     if (userAgent.includes('Linux')) return 'Linux';
     return 'Navigateur';
   }
-}
+
   /**
    * Revoke all other sessions except current
    */
