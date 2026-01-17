@@ -1,10 +1,10 @@
-const twoFactorService = require('../services/twoFactorService');
+import {TwoFactorService} from '#services/twoFactor.service';
 
-class TwoFactorController {
-  async enable(req, res) {
+export class TwoFactorController {
+  static async enable(req, res) {
     try {
       const userId = req.user.id;
-      const result = await twoFactorService.enable2FA(userId);
+      const result = await TwoFactorService.enable2FA(userId);
       
       res.json({
         message: '2FA initialisé. Scannez le QR code et confirmez avec un code.',
@@ -17,7 +17,7 @@ class TwoFactorController {
     }
   }
 
-  async confirm(req, res) {
+  static async confirm(req, res) {
     try {
       const userId = req.user.id;
       const { token } = req.body;
@@ -26,7 +26,7 @@ class TwoFactorController {
         return res.status(400).json({ error: 'Code requis' });
       }
 
-      await twoFactorService.confirm2FA(userId, token);
+      await TwoFactorService.confirm2FA(userId, token);
       
       res.json({ message: '2FA activé avec succès' });
     } catch (error) {
@@ -34,7 +34,7 @@ class TwoFactorController {
     }
   }
 
-  async disable(req, res) {
+  static async disable(req, res) {
     try {
       const userId = req.user.id;
       const { password, token } = req.body;
@@ -43,7 +43,7 @@ class TwoFactorController {
         return res.status(400).json({ error: 'Mot de passe et code requis' });
       }
 
-      await twoFactorService.disable2FA(userId, password, token);
+      await TwoFactorService.disable2FA(userId, password, token);
       
       res.json({ message: '2FA désactivé avec succès' });
     } catch (error) {
@@ -51,7 +51,7 @@ class TwoFactorController {
     }
   }
 
-  async verify(req, res) {
+  static async verify(req, res) {
     try {
       const userId = req.user.id;
       const { token } = req.body;
@@ -60,7 +60,7 @@ class TwoFactorController {
         return res.status(400).json({ error: 'Code requis' });
       }
 
-      const verified = await twoFactorService.verify2FACode(userId, token);
+      const verified = await TwoFactorService.verify2FACode(userId, token);
       
       if (!verified) {
         return res.status(400).json({ error: 'Code invalide' });
@@ -73,4 +73,3 @@ class TwoFactorController {
   }
 }
 
-module.exports = new TwoFactorController();
