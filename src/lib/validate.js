@@ -1,6 +1,6 @@
-const { ValidationException } = require('./exceptions');
+import { ValidationException } from './exceptions.js';
 
-const validate = (schema) => (req, res, next) => {
+export const validate = (schema) => (req, res, next) => {
   const result = schema.safeParse(req.body);
 
   if (!result.success) {
@@ -13,4 +13,16 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-module.exports = validate;
+export const validateData = (schema, data) => {
+  const result = schema.safeParse(data);
+  
+  if (!result.success) {
+    const error = new ValidationException(result.error.errors);
+    error.statusCode = 422;
+    throw error;
+  }
+  
+  return result.data;
+};
+
+export default validate;
