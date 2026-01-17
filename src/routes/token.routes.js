@@ -98,3 +98,5 @@ router.delete("/sessions/others", authenticate, asyncHandler(async (req, res) =>
 }));
 
 export default router;
+// Revoke all other sessions
+router.delete('/sessions/others', authMiddleware, asyncHandler(TokenController.revokeOtherSessions));

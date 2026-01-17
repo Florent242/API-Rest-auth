@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import tokenRoutes from "./routes/token.routes.js"; // ← IMPORTANT
+import passwordRoutes from "#routes/password.routes";
 import { TokenService } from "./services/token.service.js"; // ← IMPORTANT
 
 import { httpLogger } from "#lib/logger";
@@ -70,6 +71,7 @@ app.get("/test-token", async (req, res) => {
 
 // Routes d'authentification
 app.use("/auth", tokenRoutes); // ← IMPORTANT
+app.use("/auth", passwordRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/auth", authRouter); // Vérification email, reset password
