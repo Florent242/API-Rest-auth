@@ -6,9 +6,49 @@ import { authMiddleware } from "#middlewares/auth.middleware";
 const router = Router();
 
 /**
- * @route   POST /auth/refresh
- * @desc    Rafraîchir un access token avec un refresh token
- * @access  Public
+ * @swagger
+ * /auth/refresh:
+ *   post:
+ *     tags: [Sessions]
+ *     summary: Rafraîchir l'access token
+ *     description: Génère un nouvel access token à partir d'un refresh token valide
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 example: abc123def456...
+ *     responses:
+ *       200:
+ *         description: Access token rafraîchi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 accessToken:
+ *                   type: string
+ *                 expiresIn:
+ *                   type: integer
+ *                   example: 900
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     email:
+ *                       type: string
+ *       401:
+ *         description: Refresh token invalide ou expiré
  */
 router.post("/refresh", asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
@@ -43,9 +83,32 @@ router.post("/refresh", asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   GET /auth/sessions
- * @desc    Lister toutes les sessions actives de l'utilisateur
- * @access  Private (authentifié)
+ * @swagger
+ * /auth/sessions:
+ *   get:
+ *     tags: [Sessions]
+ *     summary: Lister les sessions actives
+ *     description: Récupère toutes les sessions actives de l'utilisateur connecté
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des sessions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 count:
+ *                   type: integer
+ *                 sessions:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Session'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get("/sessions", authMiddleware, asyncHandler(async (req, res) => {
   const sessions = await TokenService.getUserSessions(req.user.id);
@@ -58,9 +121,28 @@ router.get("/sessions", authMiddleware, asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   DELETE /auth/sessions/:id
- * @desc    Révoquer une session spécifique
- * @access  Private (authentifié)
+ * @swagger
+ * /auth/sessions/{id}:
+ *   delete:
+ *     tags: [Sessions]
+ *     summary: Révoquer une session
+ *     description: Révoque une session spécifique par son ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la session à révoquer
+ *     responses:
+ *       200:
+ *         description: Session révoquée
+ *       400:
+ *         description: Impossible de révoquer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.delete("/sessions/:id", authMiddleware, asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -81,9 +163,30 @@ router.delete("/sessions/:id", authMiddleware, asyncHandler(async (req, res) => 
 }));
 
 /**
- * @route   DELETE /auth/sessions/others
- * @desc    Révoquer toutes les autres sessions (garder la courante)
- * @access  Private (authentifié)
+ * @swagger
+ * /auth/sessions/others:
+ *   delete:
+ *     tags: [Sessions]
+ *     summary: Révoquer les autres sessions
+ *     description: Révoque toutes les sessions sauf la session courante
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Autres sessions révoquées
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 count:
+ *                   type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.delete("/sessions/others", authMiddleware, asyncHandler(async (req, res) => {
   const currentTokenId = req.currentRefreshTokenId; // À définir par le middleware

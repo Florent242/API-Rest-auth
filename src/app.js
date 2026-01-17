@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger.config.js";
 import tokenRoutes from "./routes/token.routes.js"; // ← IMPORTANT
 import passwordRoutes from "#routes/password.routes";
 import { TokenService } from "./services/token.service.js"; // ← IMPORTANT
@@ -29,6 +31,18 @@ app.use(generalLimiter);
 app.use(express.json());
 app.use(express.static('src/public'));
 // app.use(passport.initialize());
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'API Auth Documentation'
+}));
+
+// Route pour obtenir le spec JSON
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // Route racine
 app.get("/", (req, res) => {
@@ -69,15 +83,20 @@ app.get("/test-token", async (req, res) => {
   }
 });
 
-// Routes d'authentification
-app.use("/auth", tokenRoutes); // ← IMPORTANT
-app.use("/auth", passwordRoutes);
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "healthy", timestamp: new Date().toISOString() });
+});
+
+// Routes d'authentification (préfixe /api)
+app.use("/api/auth", tokenRoutes);
+app.use("/api/auth", passwordRoutes);
+app.use("/api/auth", authRouter);
+app.use("/api/auth", twoFactorRoutes);
+app.use("/api/auth", oauthRoutes);
+app.use("/api/user", userRoutes2);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/auth", authRouter); // Vérification email, reset password
-app.use("/2fa", twoFactorRoutes);
-app.use("/oauth", oauthRoutes);
-app.use("/user", userRoutes2);
 
 // 404 Handler
 app.use((req, res) => {
