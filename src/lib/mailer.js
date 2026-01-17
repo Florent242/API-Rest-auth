@@ -91,4 +91,77 @@ L'équipe API Auth
       text,
     });
   },
+
+  async sendPasswordChanged(email, userName = '') {
+    const text = `
+Bonjour ${userName},
+
+Votre mot de passe a été modifié avec succès.
+
+Si vous n'êtes pas à l'origine de cette modification, veuillez contacter immédiatement notre équipe de support.
+
+Date de modification : ${new Date().toLocaleString('fr-FR')}
+
+Cordialement,
+L'équipe API Auth
+    `;
+
+    await this.sendMail({
+      to: email,
+      subject: "Votre mot de passe a été modifié",
+      text,
+    });
+  },
+
+  async sendLoginNotification(email, userName = '', deviceInfo = {}) {
+    const { userAgent = 'Inconnu', ipAddress = 'Inconnue', location = 'Inconnue' } = deviceInfo;
+    
+    const text = `
+Bonjour ${userName},
+
+Une nouvelle connexion à votre compte a été détectée.
+
+Détails de la connexion :
+- Date : ${new Date().toLocaleString('fr-FR')}
+- Appareil : ${userAgent}
+- Adresse IP : ${ipAddress}
+- Localisation : ${location}
+
+Si vous n'êtes pas à l'origine de cette connexion, veuillez immédiatement :
+1. Changer votre mot de passe
+2. Révoquer toutes vos sessions actives
+3. Contacter notre équipe de support
+
+Cordialement,
+L'équipe API Auth
+    `;
+
+    await this.sendMail({
+      to: email,
+      subject: "Nouvelle connexion détectée sur votre compte",
+      text,
+    });
+  },
+
+  async sendSessionRevoked(email, userName = '', count = 1) {
+    const text = `
+Bonjour ${userName},
+
+${count} session(s) a/ont été révoquée(s) sur votre compte.
+
+Date : ${new Date().toLocaleString('fr-FR')}
+Nombre de sessions révoquées : ${count}
+
+Si vous n'êtes pas à l'origine de cette action, veuillez immédiatement contacter notre équipe de support.
+
+Cordialement,
+L'équipe API Auth
+    `;
+
+    await this.sendMail({
+      to: email,
+      subject: "Sessions révoquées sur votre compte",
+      text,
+    });
+  },
 };

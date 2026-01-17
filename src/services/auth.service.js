@@ -38,25 +38,52 @@ export class AuthService {
     })
   }
 
-  // Rafraîchit un token d'accès à partir d'un token de rafraîchissement
-  static async refresh(refreshToken) {
+  // Rafraîchit un token d'accès à partir d'un token de rafraîchissement avec rotation
+  static async refresh(refreshToken, deviceInfo = {}) {
     if (!refreshToken) throw new BadRequestException("Missing refreshToken")
 
     const stored = await prisma.refreshToken.findUnique({
       where: { token: refreshToken },
+      include: { user: true }
     })
 
     if (!stored) throw new UnauthorizedException("Invalid refresh token")
-    if (stored.revokedAt) throw new UnauthorizedException("Refresh token revoked")
+    if (stored.revokedAt) {
+      // Détection de réutilisation - révoquer tous les tokens de l'utilisateur
+      await prisma.refreshToken.updateMany({
+        where: { userId: stored.userId, revokedAt: null },
+        data: { revokedAt: new Date() }
+      })
+      throw new UnauthorizedException("Token reuse detected - all sessions revoked")
+    }
     if (stored.expiresAt < new Date()) throw new UnauthorizedException("Refresh token expired")
 
-    // Optionnel : vérifier signature JWT aussi
-    await verifyToken(refreshToken).catch(() => {
-      throw new UnauthorizedException("Invalid refresh token")
+    // Rotation du token: révoquer l'ancien et créer un nouveau
+    await prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revokedAt: new Date() }
+    })
+
+    // Créer un nouveau refresh token
+    const newRefreshTokenValue = crypto.randomBytes(40).toString('hex')
+    const newExpiresAt = addDays(new Date(), 7)
+    
+    const newRefreshToken = await prisma.refreshToken.create({
+      data: {
+        token: newRefreshTokenValue,
+        userId: stored.userId,
+        userAgent: deviceInfo.userAgent || stored.userAgent,
+        ipAddress: deviceInfo.ipAddress || stored.ipAddress,
+        expiresAt: newExpiresAt
+      }
     })
 
     const accessToken = await signToken({ userId: stored.userId })
-    return { accessToken }
+    
+    return { 
+      accessToken,
+      refreshToken: newRefreshToken.token
+    }
   }
 
   // Envoie un email de réinitialisation de mot de passe

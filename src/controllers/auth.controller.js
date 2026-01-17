@@ -69,7 +69,11 @@ export class AuthController {
   // Rafraîchit un token d'accès à partir d'un token de rafraîchissement
   static async refresh(req, res) {
     const { refreshToken } = req.body
-    const tokens = await AuthService.refresh(refreshToken)
+    const deviceInfo = {
+      userAgent: req.get('user-agent'),
+      ipAddress: req.ip || req.connection.remoteAddress
+    }
+    const tokens = await AuthService.refresh(refreshToken, deviceInfo)
 
     res.status(200).json(tokens);
   }

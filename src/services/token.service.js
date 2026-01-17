@@ -2,12 +2,14 @@ import { randomBytes } from 'crypto';
 import { prisma } from '#lib/prisma';
 
 export class TokenService {
+  static MAX_SESSIONS_PER_USER = 5;
+
   // 1. Générer un token cryptographique unique
   static generateToken() {
     return randomBytes(40).toString('hex');
   }
   
-  // 2. Créer un refresh token (whitelist)
+  // 2. Créer un refresh token (whitelist) avec limitation de sessions
   static async createRefreshToken(userId, deviceInfo = {}) {
     try {
       // Vérification de l'utilisateur
@@ -17,6 +19,34 @@ export class TokenService {
       
       if (!userExists) {
         throw new Error(`Utilisateur ${userId} non trouvé`);
+      }
+      
+      // Limiter le nombre de sessions actives (max 5)
+      const activeSessions = await prisma.refreshToken.count({
+        where: {
+          userId,
+          revokedAt: null,
+          expiresAt: { gt: new Date() }
+        }
+      });
+      
+      if (activeSessions >= this.MAX_SESSIONS_PER_USER) {
+        // Supprimer la session la plus ancienne
+        const oldestSession = await prisma.refreshToken.findFirst({
+          where: {
+            userId,
+            revokedAt: null,
+            expiresAt: { gt: new Date() }
+          },
+          orderBy: { createdAt: 'asc' }
+        });
+        
+        if (oldestSession) {
+          await prisma.refreshToken.update({
+            where: { id: oldestSession.id },
+            data: { revokedAt: new Date() }
+          });
+        }
       }
       
       // Génération et création
@@ -214,5 +244,56 @@ export class TokenService {
     });
 
     return result.count;
+  }
+
+  /**
+   * Rotate refresh token - Invalider l'ancien et créer un nouveau
+   * Sécurité: détection de réutilisation de token
+   */
+  static async rotateRefreshToken(oldToken, deviceInfo = {}) {
+    try {
+      // Vérifier le token actuel
+      const verification = await this.verifyToken(oldToken);
+      
+      if (!verification.valid) {
+        // Si le token est invalide ou révoqué, c'est suspect
+        if (verification.reason === 'Token révoqué') {
+          // Réutilisation détectée! Révoquer toute la famille de tokens
+          const revokedToken = await prisma.refreshToken.findUnique({
+            where: { token: oldToken }
+          });
+          
+          if (revokedToken) {
+            await this.revokeAllUserTokens(revokedToken.userId);
+            throw new Error('Token reuse detected - all sessions revoked for security');
+          }
+        }
+        throw new Error(verification.reason);
+      }
+      
+      const { user, refreshToken } = verification;
+      
+      // Révoquer l'ancien token
+      await prisma.refreshToken.update({
+        where: { id: refreshToken.id },
+        data: { revokedAt: new Date() }
+      });
+      
+      // Créer un nouveau token avec les mêmes infos device
+      const newRefreshToken = await this.createRefreshToken(user.id, {
+        userAgent: deviceInfo.userAgent || refreshToken.userAgent,
+        ipAddress: deviceInfo.ipAddress || refreshToken.ipAddress
+      });
+      
+      return {
+        success: true,
+        refreshToken: newRefreshToken,
+        user
+      };
+      
+    } catch (error) {
+      console.error('[TokenService] Erreur rotation token:', error);
+      throw error;
+    }
   }
 }
