@@ -1,8 +1,9 @@
-const request = require('supertest');
-const app = require('../../src/app');
-const prisma = require('../../src/config/database');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+import { describe, test, expect, beforeEach, afterAll } from '@jest/globals';
+import request from 'supertest';
+import app from '../../src/app.js';
+import prisma from '../../src/config/database.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 describe('User Profile Tests', () => {
   let testUser;

@@ -1,9 +1,8 @@
 import express from 'express';
-const router = express.Router();
-import {UserController} from '#controllers/userController';
-import {authMiddleware} from '#middlewares/auth.middleware';
+import * as userController from '../controllers/userController.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 
-const userController = new UserController();
+const router = express.Router();
 
 router.get('/profile', authMiddleware, userController.getProfile);
 router.put('/profile', authMiddleware, userController.updateProfile);

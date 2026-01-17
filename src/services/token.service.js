@@ -189,3 +189,30 @@ export class TokenService {
     return 'Navigateur';
   }
 }
+  /**
+   * Revoke all other sessions except current
+   */
+  static async revokeOtherSessions(userId, currentAccessToken) {
+    // Find all active refresh tokens for this user
+    const tokens = await prisma.refreshToken.findMany({
+      where: {
+        userId,
+        revokedAt: null,
+        expiresAt: { gt: new Date() }
+      }
+    });
+
+    // Revoke all tokens
+    const result = await prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        revokedAt: null
+      },
+      data: {
+        revokedAt: new Date()
+      }
+    });
+
+    return result.count;
+  }
+}

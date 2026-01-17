@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API REST Auth - Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1em;
+            font-weight: 500;
+            color: #495057;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .endpoint {
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .endpoint-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .endpoint-header:hover {
+            background: #e9ecef;
+        }
+
+        .method {
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85em;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .method.get { background: #61affe; color: white; }
+        .method.post { background: #49cc90; color: white; }
+        .method.put { background: #fca130; color: white; }
+        .method.delete { background: #f93e3e; color: white; }
+
+        .endpoint-path {
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .endpoint-description {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .endpoint-body {
+            padding: 20px;
+            display: none;
+        }
+
+        .endpoint.expanded .endpoint-body {
+            display: block;
+        }
+
+        .endpoint.expanded .endpoint-header {
+            background: #667eea;
+            color: white;
+        }
+
+        .endpoint.expanded .endpoint-description {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .subsection {
+            margin-bottom: 20px;
+        }
+
+        .subsection h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .param-table th,
+        .param-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .param-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .param-table .required {
+            color: #f93e3e;
+            font-weight: bold;
+        }
+
+        .param-table .optional {
+            color: #6c757d;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .badge-auth {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .badge-public {
+            background: #28a745;
+            color: white;
+        }
+
+        .response-code {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .response-200 { background: #d4edda; color: #155724; }
+        .response-201 { background: #d4edda; color: #155724; }
+        .response-400 { background: #f8d7da; color: #721c24; }
+        .response-401 { background: #f8d7da; color: #721c24; }
+        .response-404 { background: #f8d7da; color: #721c24; }
+        .response-500 { background: #f8d7da; color: #721c24; }
+
+        .search-box {
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 API REST Auth</h1>
+            <p>Documentation complète de l'API d'authentification</p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('auth')">🔑 Authentification</button>
+            <button class="nav-tab" onclick="showSection('user')">👤 Utilisateur</button>
+            <button class="nav-tab" onclick="showSection('sessions')">📱 Sessions</button>
+            <button class="nav-tab" onclick="showSection('email')">📧 Email</button>
+            <button class="nav-tab" onclick="showSection('oauth')">🌐 OAuth</button>
+            <button class="nav-tab" onclick="showSection('2fa')">🔒 2FA</button>
+        </div>
+
+        <div class="content">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Rechercher un endpoint..." onkeyup="searchEndpoints()">
+            </div>
+
+            <!-- Section Authentification -->
+            <div id="auth" class="section active">
+                <div class="info-box">
+                    <h3>Base URL</h3>
+                    <p><code>http://localhost:3000/api</code></p>
+                </div>
+
+                <!-- Register -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/auth/register</span>
+                        <span class="badge badge-public">Public</span>
+                        <span class="endpoint-description">Inscription d'un nouvel utilisateur</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📥 Corps de la requête</h4>
+                            <div class="code-block">
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!",
+  "name": "John Doe"
+}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📋 Paramètres</h4>
+                            <table class="param-table">
+                                <tr>
+                                    <th>Champ</th>
+                                    <th>Type</th>
+                                    <th>Requis</th>
+                                    <th>Description</th>
+                                </tr>
+                                <tr>
+                                    <td>email</td>
+                                    <td>string</td>
+                                    <td class="required">OUI</td>
+                                    <td>Email valide</td>
+                                </tr>
+                                <tr>
+                                    <td>password</td>
+                                    <td>string</td>
+                                    <td class="required">OUI</td>
+                                    <td>Min 8 caractères, 1 majuscule, 1 chiffre, 1 spécial</td>
+                                </tr>
+                                <tr>
+                                    <td>name</td>
+                                    <td>string</td>
+                                    <td class="optional">NON</td>
+                                    <td>Nom de l'utilisateur</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-201">201</span> Utilisateur créé avec succès</p>
+                            <div class="code-block">
+{
+  "message": "Utilisateur créé avec succès",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe"
+  }
+}
+                            </div>
+                            <p><span class="response-code response-400">400</span> Données invalides</p>
+                            <p><span class="response-code response-409">409</span> Email déjà utilisé</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Login -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/auth/login</span>
+                        <span class="badge badge-public">Public</span>
+                        <span class="endpoint-description">Connexion utilisateur</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📥 Corps de la requête</h4>
+                            <div class="code-block">
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!"
+}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Connexion réussie</p>
+                            <div class="code-block">
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "uuid-refresh-token",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe"
+  }
+}
+                            </div>
+                            <p><span class="response-code response-401">401</span> Identifiants incorrects</p>
+                            <p><span class="response-code response-429">429</span> Trop de tentatives</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logout -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/auth/logout</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Déconnexion utilisateur</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>🔑 Headers requis</h4>
+                            <div class="code-block">
+Authorization: Bearer {accessToken}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Déconnexion réussie</p>
+                            <p><span class="response-code response-401">401</span> Non authentifié</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Refresh Token -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/auth/refresh</span>
+                        <span class="badge badge-public">Public</span>
+                        <span class="endpoint-description">Rafraîchir l'access token</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📥 Corps de la requête</h4>
+                            <div class="code-block">
+{
+  "refreshToken": "uuid-refresh-token"
+}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Token rafraîchi</p>
+                            <div class="code-block">
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+                            </div>
+                            <p><span class="response-code response-401">401</span> Refresh token invalide</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Change Password -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint-path">/auth/password</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Changer le mot de passe</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>🔑 Headers requis</h4>
+                            <div class="code-block">
+Authorization: Bearer {accessToken}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📥 Corps de la requête</h4>
+                            <div class="code-block">
+{
+  "currentPassword": "OldPass123!",
+  "newPassword": "NewSecurePass456!"
+}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Mot de passe modifié</p>
+                            <p><span class="response-code response-401">401</span> Mot de passe actuel incorrect</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Utilisateur -->
+            <div id="user" class="section">
+                <!-- Get Profile -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/user/profile</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Récupérer le profil utilisateur</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>🔑 Headers requis</h4>
+                            <div class="code-block">
+Authorization: Bearer {accessToken}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Profil récupéré</p>
+                            <div class="code-block">
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "emailVerifiedAt": "2024-01-01T00:00:00.000Z",
+  "createdAt": "2024-01-01T00:00:00.000Z"
+}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update Profile -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint-path">/user/profile</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Mettre à jour le profil</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📥 Corps de la requête</h4>
+                            <div class="code-block">
+{
+  "name": "John Updated",
+  "email": "newemail@example.com"
+}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Profil mis à jour</p>
+                            <p><span class="response-code response-409">409</span> Email déjà utilisé</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete Account -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint-path">/user/account</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Supprimer le compte (soft delete)</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Compte désactivé</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Sessions -->
+            <div id="sessions" class="section">
+                <!-- List Sessions -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/auth/sessions</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Lister toutes les sessions actives</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Sessions récupérées</p>
+                            <div class="code-block">
+{
+  "sessions": [
+    {
+      "id": "uuid",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "expiresAt": "2024-02-01T00:00:00.000Z",
+      "isCurrent": true
+    }
+  ]
+}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revoke Session -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint-path">/auth/sessions/:id</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Révoquer une session spécifique</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Session révoquée</p>
+                            <p><span class="response-code response-404">404</span> Session introuvable</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revoke Other Sessions -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint-path">/auth/sessions/others</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Révoquer toutes les autres sessions</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Sessions révoquées</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Email -->
+            <div id="email" class="section">
+                <!-- Send Verification -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/auth/verify-email</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Envoyer email de vérification</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Email envoyé</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verify Email -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/auth/verify/:token</span>
+                        <span class="badge badge-public">Public</span>
+                        <span class="endpoint-description">Vérifier l'email avec le token</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Email vérifié</p>
+                            <p><span class="response-code response-400">400</span> Token invalide ou expiré</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Forgot Password -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/auth/forgot-password</span>
+                        <span class="badge badge-public">Public</span>
+                        <span class="endpoint-description">Demander réinitialisation mot de passe</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📥 Corps de la requête</h4>
+                            <div class="code-block">
+{
+  "email": "user@example.com"
+}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Email envoyé</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reset Password -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/auth/reset-password</span>
+                        <span class="badge badge-public">Public</span>
+                        <span class="endpoint-description">Réinitialiser le mot de passe</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📥 Corps de la requête</h4>
+                            <div class="code-block">
+{
+  "token": "reset-token",
+  "newPassword": "NewSecurePass123!"
+}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Mot de passe réinitialisé</p>
+                            <p><span class="response-code response-400">400</span> Token invalide</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section OAuth -->
+            <div id="oauth" class="section">
+                <div class="info-box">
+                    <h3>OAuth 2.0</h3>
+                    <p>Support de Google et GitHub OAuth</p>
+                </div>
+
+                <!-- Google OAuth -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/auth/google</span>
+                        <span class="badge badge-public">Public</span>
+                        <span class="endpoint-description">Initialiser OAuth Google</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📝 Description</h4>
+                            <p>Redirige vers Google pour l'authentification</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Google Callback -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/auth/google/callback</span>
+                        <span class="badge badge-public">Public</span>
+                        <span class="endpoint-description">Callback Google OAuth</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Authentification réussie</p>
+                            <div class="code-block">
+{
+  "accessToken": "...",
+  "refreshToken": "...",
+  "user": { ... }
+}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2FA -->
+            <div id="2fa" class="section">
+                <div class="info-box">
+                    <h3>Authentification à deux facteurs (TOTP)</h3>
+                    <p>Sécurité renforcée avec Google Authenticator</p>
+                </div>
+
+                <!-- Enable 2FA -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/auth/2fa/enable</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Activer le 2FA</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> QR Code généré</p>
+                            <div class="code-block">
+{
+  "qrCode": "data:image/png;base64,...",
+  "secret": "base32-secret"
+}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verify 2FA -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/auth/2fa/verify</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Vérifier le code 2FA</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📥 Corps de la requête</h4>
+                            <div class="code-block">
+{
+  "token": "123456"
+}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> Code valide</p>
+                            <p><span class="response-code response-400">400</span> Code invalide</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Disable 2FA -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/auth/2fa/disable</span>
+                        <span class="badge badge-auth">🔒 Auth</span>
+                        <span class="endpoint-description">Désactiver le 2FA</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="subsection">
+                            <h4>📥 Corps de la requête</h4>
+                            <div class="code-block">
+{
+  "password": "UserPassword123!",
+  "token": "123456"
+}
+                            </div>
+                        </div>
+                        <div class="subsection">
+                            <h4>📤 Réponses</h4>
+                            <p><span class="response-code response-200">200</span> 2FA désactivé</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(sectionId).classList.add('active');
+            
+            event.target.classList.add('active');
+        }
+
+        function toggleEndpoint(element) {
+            element.classList.toggle('expanded');
+        }
+
+        function searchEndpoints() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const endpoints = document.querySelectorAll('.endpoint');
+            
+            endpoints.forEach(endpoint => {
+                const text = endpoint.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    endpoint.style.display = 'block';
+                } else {
+                    endpoint.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

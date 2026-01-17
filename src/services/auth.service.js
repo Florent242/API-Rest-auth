@@ -1,7 +1,9 @@
 import { prisma } from "#lib/prisma"
 import { mailer } from "#lib/mailer"
 import { signToken, verifyToken} from "#lib/jwt"
+import { hashPassword } from "#lib/password"
 import { ConflictException, UnauthorizedException, BadRequestException } from "#lib/exceptions"
+import crypto from "crypto"
 
 // Ajoute des jours à une date
 function addDays(d, days) {
@@ -79,6 +81,9 @@ export class AuthService {
         expiresAt,
       },
     });
+
+    const front = process.env.FRONT_URL || "http://localhost:5173";
+    const resetUrl = `${front}/reset-password?token=${token}`;
 
     if (process.env.MAIL_HOST) {
       await mailer.sendResetPassword(user.email, token);

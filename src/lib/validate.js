@@ -1,15 +1,28 @@
-import { ValidationException } from "#lib/exceptions";
+import { ValidationException } from './exceptions.js';
 
-/**
- * Cette fonction vérifie que les données reçues respectent les règles prévues.
- * Si ce n'est pas le cas, elle lève une erreur (Exception) que le serveur catchera.
- */
-export function validateData(schema, data) {
-  const result = schema.safeParse(data);
+export const validate = (schema) => (req, res, next) => {
+  const result = schema.safeParse(req.body);
 
   if (!result.success) {
-    throw new ValidationException(result.error.flatten().fieldErrors);
+    return res.status(422).json({
+      errors: result.error.errors,
+    });
   }
 
+  req.validatedBody = result.data;
+  next();
+};
+
+export const validateData = (schema, data) => {
+  const result = schema.safeParse(data);
+  
+  if (!result.success) {
+    const error = new ValidationException(result.error.errors);
+    error.statusCode = 422;
+    throw error;
+  }
+  
   return result.data;
-}
+};
+
+export default validate;

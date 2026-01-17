@@ -1,12 +1,23 @@
-import express from 'express';
-const router = express.Router();
-import {TwoFactorController} from '#controllers/twoFactorController';
-import {authMiddleware} from '#middlewares/auth.middleware';
-import {asyncHandler} from '#lib/async-handler';
+import { Router } from 'express';
+import { TwoFactorController } from '#controllers/twoFactor.controller';
+import { authMiddleware } from '#middlewares/auth.middleware';
+import { asyncHandler } from '#lib/async-handler';
 
-router.post('/enable', authMiddleware, asyncHandler(TwoFactorController.enable));
-router.post('/confirm', authMiddleware, asyncHandler(TwoFactorController.confirm));
-router.post('/disable', authMiddleware, asyncHandler(TwoFactorController.disable));
-router.post('/verify', authMiddleware, asyncHandler(TwoFactorController.verify));
+const router = Router();
+
+// All 2FA routes require authentication
+router.use(authMiddleware);
+
+// Enable 2FA - Generate secret and QR code
+router.post('/enable', TwoFactorController.enable);
+
+// Confirm 2FA activation with verification code
+router.post('/confirm', TwoFactorController.confirm);
+
+// Verify a 2FA code
+router.post('/verify', TwoFactorController.verify);
+
+// Disable 2FA
+router.post('/disable', TwoFactorController.disable);
 
 export default router;

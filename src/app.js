@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import tokenRoutes from "./routes/token.routes.js"; // ← IMPORTANT
+import passwordRoutes from "#routes/password.routes";
 import { TokenService } from "./services/token.service.js"; // ← IMPORTANT
 
 import { httpLogger } from "#lib/logger";
@@ -10,24 +11,24 @@ import { notFoundHandler } from "#middlewares/not-found";
 import { generalLimiter } from "#middlewares/rate-limit.middleware";
 import userRoutes from "#routes/user.routes";
 import adminRoutes from "#routes/admin.routes";
-// Les routes seront importez ici
-import authRouter from "#routes/auth.routes"
-import twoFactorRouter from "#routes/twoFactor.routes";
-import oauthRouter from "#routes/oauth.routes";
-import userRoutes2 from "#routes/userRoutes";
-//import {default as passport} from "#config/passport";
+import authRouter from "#routes/auth.routes";
+import twoFactorRoutes from './routes/twoFactorRoutes.js';
+import oauthRoutes from './routes/oauthRoutes.js';
+import userRoutes2 from './routes/userRoutes.js';
+// import passport from './config/passport.js';
 
 // import userRoutes from "#routes/user.routes";
 
 const app = express();
 
-// Middlewares
+// Middlewares globaux
 app.use(helmet());
 app.use(cors());
 app.use(httpLogger);
 app.use(generalLimiter);
 app.use(express.json());
-//app.use(passport.initialize());
+app.use(express.static('src/public'));
+// app.use(passport.initialize());
 
 // Route racine
 app.get("/", (req, res) => {
@@ -70,11 +71,12 @@ app.get("/test-token", async (req, res) => {
 
 // Routes d'authentification
 app.use("/auth", tokenRoutes); // ← IMPORTANT
+app.use("/auth", passwordRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
-app.use(authRouter);
-app.use("/2fa", twoFactorRouter);
-app.use("/oauth", oauthRouter);
+app.use("/auth", authRouter); // Vérification email, reset password
+app.use("/2fa", twoFactorRoutes);
+app.use("/oauth", oauthRoutes);
 app.use("/user", userRoutes2);
 
 // 404 Handler
@@ -85,13 +87,7 @@ app.use((req, res) => {
   });
 });
 
-// Error Handler
-app.use((err, req, res, next) => {
-  console.error("❌ Erreur:", err);
-  res.status(500).json({
-    success: false,
-    error: "Erreur serveur interne"
-  });
-});
+// Error Handler (doit être en dernier)
+app.use(errorHandler);
 
 export default app;

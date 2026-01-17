@@ -100,3 +100,22 @@ export class TokenController {
     }
   }
 }
+  // Revoke all other sessions except current
+  static async revokeOtherSessions(req, res) {
+    try {
+      const userId = req.user.userId;
+      const currentToken = req.headers.authorization?.replace('Bearer ', '');
+
+      // Get current refresh token ID from access token
+      const count = await TokenService.revokeOtherSessions(userId, currentToken);
+
+      res.json({
+        success: true,
+        message: `${count} session(s) revoked`,
+        count
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+}

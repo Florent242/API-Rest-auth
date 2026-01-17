@@ -1,6 +1,4 @@
 import nodemailer from "nodemailer";
-import fs from "node:fs/promises";
-import path from "node:path";
 
 function hasSMTP() {
   return (
@@ -24,21 +22,10 @@ const transporter = hasSMTP()
     })
   : null;
 
-async function renderTemplate(name, variables = {}) {
-  const filePath = path.join(process.cwd(), "src", "lib", `${name}.html`);
-  let html = await fs.readFile(filePath, "utf-8");
-
-  for (const [key, value] of Object.entries(variables)) {
-    html = html.replaceAll(`{{${key}}}`, value);
-  }
-
-  return html;
-}
-
 export const mailer = {
-  async sendMail({ to, subject, html, text }) {
+  async sendMail({ to, subject, text, html }) {
     if (!transporter) {
-      console.log(`[DEV] Mail to ${to} - ${subject}\n${text || html}`);
+      console.log(`\n[DEV] Mail simulé:\nTo: ${to}\nSubject: ${subject}\n${text || html}\n`);
       return;
     }
 
@@ -46,34 +33,62 @@ export const mailer = {
       from: process.env.MAIL_FROM,
       to,
       subject,
-      text: text || html.replace(/<[^>]+>/g, ""), // fallback text
-      html,
+      text,
+      html: html || text, // fallback
     });
   },
 
   async sendVerification(email, token) {
-    const front = process.env.FRONT_URL || "http://localhost:5173";
+    const front = process.env.FRONT_URL || "http://localhost:3000";
     const verifyUrl = `${front}/verify-email?token=${token}`;
-    const html = await renderTemplate("verify-email", { VERIFY_URL: verifyUrl });
+    
+    const text = `
+Bonjour,
+
+Merci de vous être inscrit ! Pour activer votre compte, cliquez sur le lien ci-dessous :
+
+${verifyUrl}
+
+Ce lien est valable pendant 24 heures.
+
+Si vous n'avez pas créé de compte, ignorez ce message.
+
+Cordialement,
+L'équipe API Auth
+    `;
 
     await this.sendMail({
       to: email,
-      subject: "Confirme ton email",
-      html,
+      subject: "Vérifiez votre email",
+      text,
     });
   },
 
   async sendResetPassword(email, token) {
-    const front = process.env.FRONT_URL || "http://localhost:5173";
+    const front = process.env.FRONT_URL || "http://localhost:3000";
     const resetUrl = `${front}/reset-password?token=${token}`;
-    const html = await renderTemplate("reset-password", { RESET_URL: resetUrl,
-    YEAR: new Date().getFullYear().toString()
-    });
+    
+    const text = `
+Bonjour,
+
+Vous avez demandé à réinitialiser votre mot de passe.
+Cliquez sur le lien ci-dessous pour créer un nouveau mot de passe :
+
+${resetUrl}
+
+Ce lien est valable pendant 24 heures.
+
+⚠️ ATTENTION : Si vous n'avez pas demandé cette réinitialisation, 
+ignorez ce message. Votre mot de passe actuel reste inchangé.
+
+Cordialement,
+L'équipe API Auth
+    `;
 
     await this.sendMail({
       to: email,
       subject: "Réinitialisation de votre mot de passe",
-      html,
+      text,
     });
   },
 };

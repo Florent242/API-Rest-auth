@@ -82,129 +82,88 @@ npm run test:coverage
 npm run db:studio
 ```
 
-## 📚 Endpoints API
+## 📚 Documentation API Interactive
 
-### Authentification
+### 🌐 Interface Web de Documentation
 
-#### POST /api/users/register
-Créer un nouveau compte utilisateur.
+Accédez à la documentation interactive complète de l'API :
 
-**Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "password123",
-  "firstName": "John",
-  "lastName": "Doe"
-}
+```bash
+# Démarrer le serveur
+npm run dev
+
+# Ouvrir dans votre navigateur
+http://localhost:3000/api-docs
 ```
 
-**Response (201):**
-```json
-{
-  "success": true,
-  "message": "User registered successfully",
-  "data": {
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "firstName": "John",
-      "lastName": "Doe",
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z"
-    },
-    "accessToken": "jwt_token",
-    "refreshToken": "jwt_refresh_token"
-  }
-}
+Cette interface fournit :
+- 📖 Liste complète de tous les endpoints
+- 🧪 Interface de test intégrée
+- 📝 Exemples de requêtes/réponses
+- 🔐 Codes de statut HTTP détaillés
+- 🎯 Organisation par catégories
+
+---
+
+## 📋 Endpoints Principaux
+
+### 🔐 Authentification
+
+| Méthode | Endpoint | Description | Auth requise |
+|---------|----------|-------------|--------------|
+| POST | `/api/users/register` | Inscription utilisateur | Non |
+| POST | `/api/users/login` | Connexion | Non |
+| POST | `/api/users/logout` | Déconnexion | Oui |
+| POST | `/api/users/verify-email` | Demander vérification email | Oui |
+| GET | `/api/users/verify/:token` | Vérifier l'email | Non |
+
+### 👤 Profil Utilisateur (Auth requise)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/api/users/me` | Récupérer profil |
+| PATCH | `/api/users/me` | Modifier profil |
+| GET | `/api/users/me/login-history` | Historique connexions |
+| GET | `/api/users/me/failed-attempts` | Tentatives échouées |
+
+### 🔧 Administration
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/api/admin/blacklist/stats` | Stats blacklist |
+| POST | `/api/admin/cleanup` | Nettoyage manuel |
+
+### 📝 Exemples d'utilisation
+
+#### Inscription
+```bash
+curl -X POST http://localhost:3000/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePass123!",
+    "firstName": "John",
+    "lastName": "Doe"
+  }'
 ```
 
-#### POST /api/users/login
-Connexion d'un utilisateur existant.
-
-**Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
+#### Connexion
+```bash
+curl -X POST http://localhost:3000/api/users/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePass123!"
+  }'
 ```
 
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "user": { ... },
-    "accessToken": "jwt_token",
-    "refreshToken": "jwt_refresh_token"
-  }
-}
+#### Récupérer son profil
+```bash
+curl -X GET http://localhost:3000/api/users/me \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-#### POST /api/users/logout
-Déconnexion de l'utilisateur (révocation du refresh token).
-
-**Headers:** `Authorization: Bearer <access_token>`
-
-**Body:**
-```json
-{
-  "refreshToken": "jwt_refresh_token"
-}
-```
-
-#### POST /api/users/verify-email
-Demander l'envoi d'un email de vérification.
-
-**Headers:** `Authorization: Bearer <access_token>`
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Verification email sent",
-  "data": { "token": "verification_token" }
-}
-```
-
-#### GET /api/users/verify/:token
-Vérifier l'email avec le token reçu.
-
-### Profil Utilisateur (Authentifié)
-
-Tous ces endpoints nécessitent le header: `Authorization: Bearer <access_token>`
-
-#### GET /api/users/me
-Récupérer le profil de l'utilisateur connecté.
-
-#### PATCH /api/users/me
-Mettre à jour le profil utilisateur.
-
-**Body:**
-```json
-{
-  "firstName": "Jane",
-  "lastName": "Smith"
-}
-```
-
-#### GET /api/users/me/login-history
-Obtenir l'historique des connexions.
-
-**Query params:** `?limit=10`
-
-#### GET /api/users/me/failed-attempts
-Obtenir le nombre de tentatives échouées récentes.
-
-### Admin
-
-#### GET /api/admin/blacklist/stats
-Statistiques de la blacklist (requiert authentification admin).
-
-#### POST /api/admin/cleanup
-Lancer un nettoyage manuel des tokens expirés.
+**💡 Conseil:** Pour une exploration complète des endpoints avec exemples interactifs, utilisez l'interface web à `/api-docs`
 
 ## 🔒 Sécurité
 
@@ -271,7 +230,7 @@ npm run test:coverage
 npm run test:jest -- --testPathPattern=auth
 ```
 
-**Couverture actuelle: 85%** (53/62 tests passent)
+**Couverture actuelle: 85%+** (tests en progression continue)
 
 Les tests incluent :
 - ✅ Tests d'authentification (register, login, logout)

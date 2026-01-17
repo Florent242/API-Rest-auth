@@ -1,9 +1,8 @@
 import express from 'express';
-const router = express.Router();
-import {OAuthController} from '#controllers/oauthController';
-import {authMiddleware} from '#middlewares/auth.middleware';
+import * as oauthController from '../controllers/oauthController.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 
-const oauthController = new OAuthController();
+const router = express.Router();
 
 router.get('/google', oauthController.googleAuth);
 router.get('/google/callback', oauthController.googleCallback);
