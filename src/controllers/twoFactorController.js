@@ -1,7 +1,7 @@
-import {TwoFactorService} from '#services/twoFactorService';
+import {TwoFactorService} from '#services/twoFactor.service';
 
 export class TwoFactorController {
-  async enable(req, res) {
+  static async enable(req, res) {
     try {
       const userId = req.user.id;
       const result = await TwoFactorService.enable2FA(userId);
@@ -17,7 +17,7 @@ export class TwoFactorController {
     }
   }
 
-  async confirm(req, res) {
+  static async confirm(req, res) {
     try {
       const userId = req.user.id;
       const { token } = req.body;
@@ -34,7 +34,7 @@ export class TwoFactorController {
     }
   }
 
-  async disable(req, res) {
+  static async disable(req, res) {
     try {
       const userId = req.user.id;
       const { password, token } = req.body;
@@ -51,7 +51,7 @@ export class TwoFactorController {
     }
   }
 
-  async verify(req, res) {
+  static async verify(req, res) {
     try {
       const userId = req.user.id;
       const { token } = req.body;
