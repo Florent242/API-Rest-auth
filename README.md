@@ -7,6 +7,7 @@ API REST d'authentification complète avec NodeJS + Express
 Cette API fournit un système d'authentification complet avec :
 - ✅ Inscription et connexion d'utilisateurs
 - ✅ Authentification JWT (Access Token + Refresh Token)
+- ✅ **Vérification d'email obligatoire** : Les tokens sont envoyés uniquement après confirmation d'email
 - ✅ Gestion de profil utilisateur
 - ✅ Validation des données avec Zod
 - ✅ Base de données SQLite avec Prisma ORM
@@ -14,9 +15,14 @@ Cette API fournit un système d'authentification complet avec :
 - ✅ Rate limiting pour prévenir les abus
 - ✅ Historique de connexions (LoginHistory)
 - ✅ Blacklist de tokens révoqués
-- ✅ Vérification d'email par token
 - ✅ Job de nettoyage automatique
 - ✅ Tests d'intégration (85% de couverture)
+
+## 🔐 Flux d'authentification
+
+1. **Inscription** → Email de vérification envoyé (pas de tokens)
+2. **Vérification email** → Access Token + Refresh Token retournés
+3. **Login** → Access Token + Refresh Token retournés
 
 ## 🚀 Installation
 
@@ -133,9 +139,11 @@ Cette interface fournit :
 | GET | `/api/admin/blacklist/stats` | Stats blacklist |
 | POST | `/api/admin/cleanup` | Nettoyage manuel |
 
-### 📝 Exemples d'utilisation
+### 📝 Exemples d'utilisation (Copier-Coller Ready)
 
-#### Inscription
+> **Note** : Ces exemples utilisent des variables bash. Exécutez-les dans l'ordre pour un flux complet.
+
+#### 1. Inscription (pas de tokens retournés)
 ```bash
 curl -X POST http://localhost:3000/api/users/register \
   -H "Content-Type: application/json" \
@@ -147,7 +155,41 @@ curl -X POST http://localhost:3000/api/users/register \
   }'
 ```
 
-#### Connexion
+**Réponse** :
+```json
+{
+  "success": true,
+  "message": "User registered successfully",
+  "data": {
+    "user": {
+      "email": "user@example.com",
+      "emailVerifiedAt": null
+    },
+    "message": "Please check your email to verify your account"
+  }
+}
+```
+
+#### 2. Vérifier l'email (retourne les tokens)
+```bash
+# En production, le token serait dans l'email
+# Pour le test : GET le token depuis la DB ou les logs
+curl -X GET http://localhost:3000/api/users/verify/YOUR_VERIFICATION_TOKEN
+```
+
+**Réponse** :
+```json
+{
+  "success": true,
+  "message": "Email verified successfully",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
+  }
+}
+```
+
+#### 3. Connexion (retourne les tokens)
 ```bash
 curl -X POST http://localhost:3000/api/users/login \
   -H "Content-Type: application/json" \
@@ -157,38 +199,67 @@ curl -X POST http://localhost:3000/api/users/login \
   }'
 ```
 
-#### Récupérer son profil
-```bash
-curl -X GET http://localhost:3000/api/users/me \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
+**Réponse** : Même format que la vérification email, avec `user` et `tokens`
 
-#### Modifier son profil
+#### 4. Flux complet avec variables bash
 ```bash
-curl -X PATCH http://localhost:3000/api/users/me \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+# Étape 1 : Inscription
+echo "=== INSCRIPTION ==="
+REG_RESPONSE=$(curl -s -X POST http://localhost:3000/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "SecurePass123!",
+    "firstName": "Test",
+    "lastName": "User"
+  }')
+echo "$REG_RESPONSE" | jq .
+
+# Étape 2 : Récupérer le token de vérification
+# En production : depuis l'email
+# En dev : depuis les logs ou la DB
+USER_ID=$(echo "$REG_RESPONSE" | jq -r '.data.user.id')
+
+# Étape 3 : Vérifier l'email et récupérer les tokens
+VERIFY_TOKEN="GET_FROM_EMAIL_OR_DB"
+VERIFY_RESPONSE=$(curl -s -X GET "http://localhost:3000/api/users/verify/$VERIFY_TOKEN")
+echo "$VERIFY_RESPONSE" | jq .
+
+# Sauvegarder les tokens
+ACCESS_TOKEN=$(echo "$VERIFY_RESPONSE" | jq -r '.data.accessToken')
+REFRESH_TOKEN=$(echo "$VERIFY_RESPONSE" | jq -r '.data.refreshToken')
+
+# Étape 4 : Utiliser le token pour accéder au profil
+echo -e "\n=== PROFIL ==="
+curl -s -X GET http://localhost:3000/api/users/me \
+  -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
+
+# Étape 5 : Modifier le profil
+echo -e "\n=== MODIFIER PROFIL ==="
+curl -s -X PATCH http://localhost:3000/api/users/me \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "firstName": "Jane",
     "lastName": "Smith"
-  }'
-```
+  }' | jq .
 
-#### Déconnexion
-```bash
-curl -X POST http://localhost:3000/api/users/logout \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
+# Étape 6 : Historique de connexion
+echo -e "\n=== HISTORIQUE ==="
+curl -s -X GET http://localhost:3000/api/users/me/login-history \
+  -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 
-#### Demander vérification d'email
-```bash
-curl -X POST http://localhost:3000/api/users/verify-email \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
+# Étape 7 : Déconnexion (blacklist le token)
+echo -e "\n=== DÉCONNEXION ==="
+curl -s -X POST http://localhost:3000/api/users/logout \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"refreshToken\": \"$REFRESH_TOKEN\"}" | jq .
 
-#### Vérifier l'email avec token
-```bash
-curl -X GET http://localhost:3000/api/users/verify/YOUR_VERIFICATION_TOKEN
+# Étape 8 : Vérifier que le token est blacklisté
+echo -e "\n=== TOKEN BLACKLISTÉ ==="
+curl -s -X GET http://localhost:3000/api/users/me \
+  -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
 #### Renvoyer l'email de vérification
@@ -222,12 +293,61 @@ curl -X POST http://localhost:3000/api/auth/reset-password \
 #### Changer le mot de passe (authentifié)
 ```bash
 curl -X PUT http://localhost:3000/api/password/password \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "oldPassword": "SecurePass123!",
     "newPassword": "NewSecurePass456!"
   }'
+```
+
+### 🔧 Administration & Monitoring
+
+#### Statistiques de la blacklist
+```bash
+curl -X GET http://localhost:3000/api/admin/blacklist/stats \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+**Réponse** :
+```json
+{
+  "success": true,
+  "data": {
+    "blacklistedAccessTokens": 1,
+    "revokedRefreshTokens": 1
+  }
+}
+```
+
+#### Déclencher le nettoyage manuel
+```bash
+curl -X POST http://localhost:3000/api/admin/cleanup \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+**Réponse** :
+```json
+{
+  "success": true,
+  "message": "Cleanup completed",
+  "data": {
+    "expiredTokens": {
+      "deletedAccessTokens": 0,
+      "deletedRefreshTokens": 1,
+      "expiredRefreshTokens": 2,
+      "total": 3
+    },
+    "oldHistory": 0
+  }
+}
+```
+
+#### Révoquer tous les tokens d'un utilisateur
+```bash
+USER_ID="user-uuid-here"
+curl -X POST http://localhost:3000/api/admin/users/$USER_ID/revoke-tokens \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
 ### 🔄 Gestion des tokens et sessions
