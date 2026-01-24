@@ -1,13 +1,16 @@
 import rateLimit from 'express-rate-limit';
 import { logger } from '#lib/logger';
 
+// En mode test, augmenter drastiquement les limites pour éviter les faux positifs
+const isTest = process.env.NODE_ENV === 'test';
+
 /**
  * Rate limiter général pour toutes les routes
- * 100 requêtes par 15 minutes par IP
+ * 100 requêtes par 15 minutes par IP (1000 en test)
  */
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limite de 100 requêtes par fenêtre
+  max: isTest ? 1000 : 100, // Limite haute en test
   message: {
     success: false,
     error: 'Too many requests from this IP, please try again later.'
@@ -25,11 +28,11 @@ export const generalLimiter = rateLimit({
 
 /**
  * Rate limiter strict pour les routes d'authentification
- * 5 tentatives par 15 minutes par IP
+ * 5 tentatives par 15 minutes par IP (10 en test pour permettre les tests)
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limite de 5 tentatives par fenêtre
+  max: isTest ? 10 : 5, // Limite raisonnable en test
   message: {
     success: false,
     error: 'Too many authentication attempts, please try again after 15 minutes.'
@@ -52,11 +55,11 @@ export const authLimiter = rateLimit({
 
 /**
  * Rate limiter pour l'inscription
- * 3 inscriptions par heure par IP
+ * 3 inscriptions par heure par IP (10 en test pour permettre les tests)
  */
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 heure
-  max: 3, // Limite de 3 inscriptions par heure
+  max: isTest ? 10 : 3, // Limite raisonnable en test
   message: {
     success: false,
     error: 'Too many accounts created from this IP, please try again after an hour.'
@@ -77,11 +80,11 @@ export const registerLimiter = rateLimit({
 
 /**
  * Rate limiter pour les actions sensibles
- * 10 requêtes par 10 minutes par IP
+ * 10 requêtes par 10 minutes par IP (1000 en test)
  */
 export const sensitiveLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 10,
+  max: isTest ? 1000 : 10,
   message: {
     success: false,
     error: 'Too many requests for this action, please try again later.'

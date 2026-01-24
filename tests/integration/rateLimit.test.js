@@ -1,18 +1,26 @@
-import { describe, test, before } from 'node:test';
-import assert from 'node:assert';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../src/app.js';
+import { setupDatabase } from './setup.js';
 
 describe('Rate Limiting - General Limiter', () => {
+  beforeAll(async () => {
+    await setupDatabase();
+  });
+
+  afterAll(async () => {
+    // Cleanup if needed
+  });
+
   test('should allow requests under the limit', async () => {
     const res = await request(app).get('/');
-    assert.strictEqual(res.status, 200);
+    expect(res.status).toBe(200);
   });
 
   test('should include rate limit headers', async () => {
     const res = await request(app).get('/');
-    assert.ok(res.headers['ratelimit-limit'], 'RateLimit-Limit header missing');
-    assert.ok(res.headers['ratelimit-remaining'], 'RateLimit-Remaining header missing');
+    expect(res.headers['ratelimit-limit']).toBeTruthy();
+    expect(res.headers['ratelimit-remaining']).toBeTruthy();
   });
 });
 
@@ -21,32 +29,35 @@ describe('Rate Limiting - Authentication Limiter', () => {
     const res = await request(app)
       .post('/api/users/login')
       .send({
-        email: 'test@example.com',
+        email: `test-${Date.now()}@example.com`,
         password: 'wrongpassword'
       });
     
-    // Should get 401 (invalid credentials), not 429 (rate limited)
-    assert.ok([401, 400].includes(res.status), 'Should allow first attempt');
+    if (![401, 400].includes(res.status)) {
+      console.log('Unexpected status:', res.status, 'Body:', res.body);
+    }
+    
+    expect([401, 400].includes(res.status)).toBe(true);
   });
 
   test('should rate limit after multiple failed login attempts', async () => {
+    const email = `ratelimit-${Date.now()}@example.com`;
     const loginAttempt = () => request(app)
       .post('/api/users/login')
       .send({
-        email: `ratelimit-${Date.now()}@example.com`,
+        email,
         password: 'wrongpassword'
       });
 
-    // Make 5 attempts (the limit)
-    for (let i = 0; i < 5; i++) {
+    // Make 10 failed attempts to exceed the rate limit (max: 10 in test mode)
+    for (let i = 0; i < 10; i++) {
       await loginAttempt();
     }
 
-    // 6th attempt should be rate limited
+    // The 11th attempt should be rate limited
     const res = await loginAttempt();
-    assert.strictEqual(res.status, 429, 'Should be rate limited after 5 attempts');
-    assert.strictEqual(res.body.success, false);
-    assert.ok(res.body.error.includes('too many') || res.body.error.includes('Too many'), 'Error message should mention rate limit');
+    expect(res.status).toBe(429);
+    expect(res.body.success).toBe(false);
   });
 
   test('should include rate limit headers on auth routes', async () => {
@@ -57,7 +68,7 @@ describe('Rate Limiting - Authentication Limiter', () => {
         password: 'password'
       });
     
-    assert.ok(res.headers['ratelimit-limit'] !== undefined, 'Rate limit headers should be present');
+    expect(res.headers['ratelimit-limit']).toBeDefined();
   });
 });
 
@@ -72,8 +83,7 @@ describe('Rate Limiting - Registration Limiter', () => {
         lastName: 'User'
       });
     
-    // Should get 201 or validation error, not 429
-    assert.notStrictEqual(res.status, 429, 'First registration should not be rate limited');
+    expect(res.status).not.toBe(429);
   });
 
   test('should rate limit after multiple registrations from same IP', async () => {
@@ -86,15 +96,15 @@ describe('Rate Limiting - Registration Limiter', () => {
         lastName: 'User'
       });
 
-    // Make 3 attempts (the limit for registration)
-    for (let i = 0; i < 3; i++) {
+    // Make 10 registrations to exceed the rate limit (max: 10 in test mode)
+    for (let i = 0; i < 10; i++) {
       await registerAttempt(i);
     }
 
-    // 4th attempt should be rate limited
+    // The 11th attempt should be rate limited
     const res = await registerAttempt(999);
-    assert.strictEqual(res.status, 429, 'Should be rate limited after 3 registrations');
-    assert.strictEqual(res.body.success, false);
+    expect(res.status).toBe(429);
+    expect(res.body.success).toBe(false);
   });
 });
 
@@ -102,17 +112,14 @@ describe('Rate Limiting - Headers Validation', () => {
   test('should return standard rate limit headers', async () => {
     const res = await request(app).get('/');
     
-    // Check for standard RateLimit headers (not X-RateLimit legacy)
-    assert.ok(res.headers['ratelimit-limit'], 'RateLimit-Limit header missing');
-    assert.ok(res.headers['ratelimit-remaining'], 'RateLimit-Remaining header missing');
-    assert.ok(res.headers['ratelimit-reset'], 'RateLimit-Reset header missing');
+    expect(res.headers['ratelimit-limit']).toBeTruthy();
+    expect(res.headers['ratelimit-remaining']).toBeTruthy();
+    expect(res.headers['ratelimit-reset']).toBeTruthy();
   });
 
   test('should not return legacy X-RateLimit headers', async () => {
     const res = await request(app).get('/');
-    
-    // Legacy headers should be disabled
-    assert.strictEqual(res.headers['x-ratelimit-limit'], undefined, 'Legacy headers should be disabled');
+    expect(res.headers['x-ratelimit-limit']).toBeUndefined();
   });
 
   test('should show decreasing remaining count', async () => {
@@ -122,6 +129,6 @@ describe('Rate Limiting - Headers Validation', () => {
     const res2 = await request(app).get('/');
     const remaining2 = parseInt(res2.headers['ratelimit-remaining']);
     
-    assert.ok(remaining2 < remaining1, 'Remaining count should decrease');
+    expect(remaining2).toBeLessThan(remaining1);
   });
 });

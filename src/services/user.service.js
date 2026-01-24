@@ -3,6 +3,7 @@ import { hashPassword, verifyPassword } from "#lib/password";
 import { signToken } from "#lib/jwt";
 import { UserDto } from "#dto/user.dto";
 import { ConflictException, UnauthorizedException, NotFoundException } from "#lib/exceptions";
+import { VerificationService } from "./verification.service.js";
 
 export class UserService {
     /**
@@ -31,31 +32,12 @@ export class UserService {
             }
         });
 
-        // Generate access token
-        const accessToken = await signToken({
-            userId: user.id,
-            email: user.email
-        }, '1h');
-
-        // Generate refresh token
-        const refreshToken = await signToken({
-            userId: user.id,
-            email: user.email
-        }, '7d');
-
-        // Store refresh token
-        await prisma.refreshToken.create({
-            data: {
-                token: refreshToken,
-                userId: user.id,
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-            }
-        });
+        // Send verification email
+        await VerificationService.sendVerificationEmail(email);
 
         return {
             user: new UserDto(user),
-            accessToken,
-            refreshToken
+            message: "Please check your email to verify your account"
         };
     }
 
@@ -70,18 +52,9 @@ export class UserService {
             where: { email }
         });
 
-        // Log failed attempt if user not found
+        // If user not found, can't log in LoginHistory (foreign key constraint)
+        // Just throw error directly
         if (!user) {
-            // Log failed login attempt (no userId available)
-            await prisma.loginHistory.create({
-                data: {
-                    userId: 'unknown',
-                    ipAddress,
-                    userAgent,
-                    success: false
-                }
-            }).catch(() => {}); // Ignore errors in logging
-            
             throw new UnauthorizedException('Invalid credentials');
         }
 
@@ -97,7 +70,7 @@ export class UserService {
                     userAgent,
                     success: false
                 }
-            });
+            }).catch(() => {}); // Ignore errors in logging
             
             throw new UnauthorizedException('Invalid credentials');
         }
@@ -111,7 +84,7 @@ export class UserService {
                     userAgent,
                     success: false
                 }
-            });
+            }).catch(() => {}); // Ignore errors in logging
             
             throw new UnauthorizedException('Account is disabled');
         }
