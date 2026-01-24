@@ -7,7 +7,7 @@ export const generate2FASecret = async (userId) => {
     where: { id: userId },
     data: { twoFactorSecret: secret.base32, twoFactorEnabledAt: new Date() },
   });
-  return secret; // tu peux retourner secret.otpauth_url pour QR code
+  return secret; 
 };
 
 export const verify2FA = async (user, token) => {

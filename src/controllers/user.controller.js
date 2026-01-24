@@ -82,7 +82,7 @@ import { de } from "zod/locales";
 // Dans user.controller.js
 const githubCallback = async (req, res) => {
   try {
-    const user = req.user; // Injecté par Passport après le succès de la stratégie
+    const user = req.user; 
 
     if (!user) {
       return res.status(401).json({ success: false, message: "Auth échouée" });
