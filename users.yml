@@ -1,0 +1,9 @@
+# ShipNode User Configuration
+# Sync users to server: shipnode user sync
+
+users:
+  - username: henry
+    email: yerimathierry@gmail.com
+    authorized_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGXW0kX/b5NEuddQgJfetnHksss1SxRiOlLYX5I0quhW yerimathierry@gmail.comOui M. Voilà à nouveau la clef"
+
+# Generate password hashes: shipnode mkpasswd
